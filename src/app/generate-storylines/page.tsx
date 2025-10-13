@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { generateStorylines, StorylineOption } from '@/generation/storylineService';
 import StorylineCard from '@/components/StorylineCard';
 import { storyStore, characterStore } from '@/store';
-import { StoryStatus, CharacterRole } from '@/types';
 
 export default function GenerateStorylinesPage() {
     const [storylines, setStorylines] = useState<StorylineOption[]>([]);
@@ -64,11 +63,11 @@ export default function GenerateStorylinesPage() {
             const updatedStoryData = {
                 ...storyData,
                 title: selectedStoryline.title,
-                description: selectedStoryline.description,
+                summary: selectedStoryline.short_summary,
+                description: selectedStoryline.detailed_description,
                 plot: {
                     ...storyData.plot,
-                    premise: selectedStoryline.hook,
-                    goal: selectedStoryline.short_summary
+                    goal: selectedStoryline.goal
                 }
             };
 
@@ -175,7 +174,6 @@ export default function GenerateStorylinesPage() {
                                 title={storyline.title}
                                 hook={storyline.hook}
                                 short_summary={storyline.short_summary}
-                                description={storyline.description}
                                 isSelected={selectedStoryline === storyline}
                                 onClick={() => handleStorylineSelect(storyline)}
                             />

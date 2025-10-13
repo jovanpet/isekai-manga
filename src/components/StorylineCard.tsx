@@ -2,7 +2,6 @@ interface StorylineCardProps {
     title: string;
     hook: string;
     short_summary: string;
-    description: string;
     isSelected: boolean;
     onClick: () => void;
 }
@@ -11,17 +10,15 @@ export default function StorylineCard({
     title,
     hook,
     short_summary,
-    description,
     isSelected,
     onClick
 }: StorylineCardProps) {
     return (
         <div
-            className={`relative bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 cursor-pointer transition-all duration-300 transform hover:scale-105 hover:shadow-2xl border-2 ${
-                isSelected
-                    ? 'border-cyan-400 shadow-cyan-400/20'
-                    : 'border-gray-600 hover:border-purple-400'
-            }`}
+            className={`relative bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 cursor-pointer transition-all duration-300 transform hover:scale-105 hover:shadow-2xl border-2 ${isSelected
+                ? 'border-cyan-400 shadow-cyan-400/20'
+                : 'border-gray-600 hover:border-purple-400'
+                }`}
             onClick={onClick}
         >
             {/* Selection Indicator */}
@@ -64,20 +61,14 @@ export default function StorylineCard({
                         {short_summary}
                     </p>
                 </div>
-
-                {/* Description */}
-                <div className="text-gray-400 text-sm leading-relaxed">
-                    {description}
-                </div>
             </div>
 
             {/* Hover Glow Effect */}
             <div
-                className={`absolute inset-0 rounded-xl opacity-0 transition-opacity duration-300 ${
-                    isSelected
-                        ? 'bg-gradient-to-br from-cyan-400/10 via-purple-400/10 to-pink-400/10 opacity-100'
-                        : 'bg-gradient-to-br from-purple-400/5 via-pink-400/5 to-cyan-400/5 group-hover:opacity-100'
-                }`}
+                className={`absolute inset-0 rounded-xl opacity-0 transition-opacity duration-300 ${isSelected
+                    ? 'bg-gradient-to-br from-cyan-400/10 via-purple-400/10 to-pink-400/10 opacity-100'
+                    : 'bg-gradient-to-br from-purple-400/5 via-pink-400/5 to-cyan-400/5 group-hover:opacity-100'
+                    }`}
             />
         </div>
     );

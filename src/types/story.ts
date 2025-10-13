@@ -1,7 +1,6 @@
 import * as statics from "./statics";
 
 export interface Plot {
-    premise?: string;               // main setup or inciting incident
     goal: string;                   // main objective or motivation
     conflict: string;               // main opposition
     themes?: statics.Theme[];       // optional recurring motifs ("identity", "redemption")
@@ -15,9 +14,11 @@ export interface Story {
     plot: Plot;
     influence: statics.Influence;
     newWorldType: string;
+    originWorld: string;
     genreTags: statics.GenreTag[];
     description?: string;
-    totalPages: number;
+    summary?: string;
+    totalArcs: number;
     status: statics.StoryStatus;
     createdAt: string;
     updatedAt: string;
@@ -37,6 +38,7 @@ export function randomStoryPreset() {
         title: random(statics.TITLES),
         influence,
         newWorldType: random(statics.WORLDS),
+        originWorld: random(statics.WORLDS),
         overpowered: randomBool(),
         genreTags: [random(Object.values(statics.GenreTag)), statics.GenreTag.Fantasy],
         totalPages: 100,

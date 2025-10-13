@@ -10,7 +10,6 @@ import {
     GenreTag,
     Gender,
     Species,
-    CharacterClass,
     Trait,
     HairColor,
     EyeColor,
@@ -18,6 +17,7 @@ import {
     SkinTone,
     Tone,
     Theme,
+    ArcLength,
     ROLES,
     WORLDS,
     REBIRTH_TYPES
@@ -40,12 +40,13 @@ export default function CreateStoryPage() {
         title: '',
         influence: Influence.Original,
         newWorldType: WORLDS[0],
+        originWorld: WORLDS[1],
         genreTags: [] as GenreTag[],
         description: '',
         tone: undefined as Tone | undefined,
         themes: [] as Theme[],
         moralQuestion: '',
-        totalPages: 100
+        arcLength: ArcLength.Medium
     });
 
     // Character state
@@ -60,7 +61,6 @@ export default function CreateStoryPage() {
         personalityTraits: [] as Trait[],
         overpowered: false,
         age: undefined as number | undefined,
-        class: undefined as CharacterClass | undefined,
         hairColor: undefined as HairColor | undefined,
         eyeColor: undefined as EyeColor | undefined,
         height: '',
@@ -97,12 +97,13 @@ export default function CreateStoryPage() {
             title: '',
             influence: Influence.Original,
             newWorldType: WORLDS[0],
+            originWorld: WORLDS[1],
             genreTags: [],
             description: '',
             tone: undefined,
             themes: [],
             moralQuestion: '',
-            totalPages: 100
+            arcLength: ArcLength.Medium
         });
 
         setCharacterData({
@@ -116,7 +117,6 @@ export default function CreateStoryPage() {
             personalityTraits: [],
             overpowered: false,
             age: undefined,
-            class: undefined,
             hairColor: undefined,
             eyeColor: undefined,
             height: '',
@@ -127,89 +127,6 @@ export default function CreateStoryPage() {
         });
     };
 
-    /*
-    // Legacy function - replaced by storyline generation workflow
-    const handleSubmit = async () => {
-        try {
-            setIsLoading(true);
-
-            // Validate required fields
-            if (!storyData.newWorldType || storyData.genreTags.length === 0) {
-                alert('Please fill in all required story fields');
-                setIsLoading(false);
-                return;
-            }
-
-            if (!characterData.name) {
-                alert('Please fill in all required character fields');
-                setIsLoading(false);
-                return;
-            }
-
-            // Create story data
-            const storyToCreate = {
-                title: storyData.title || 'Untitled Story',
-                plot: {
-                    goal: '',
-                    conflict: '',
-                    premise: '',
-                    themes: storyData.themes,
-                    tone: storyData.tone,
-                    moralQuestion: storyData.moralQuestion
-                },
-                influence: storyData.influence,
-                newWorldType: storyData.newWorldType,
-                genreTags: storyData.genreTags,
-                description: storyData.description,
-                totalPages: storyData.totalPages,
-                status: StoryStatus.Draft
-            };
-
-            // Save story to Firebase
-            const storyId = await storyStore.createStory(storyToCreate);
-
-            // Create character data
-            const characterToCreate = {
-                name: characterData.name,
-                gender: characterData.gender,
-                species: characterData.species,
-                role: CharacterRole.Protagonist,
-                characterOccupation: characterData.characterOccupation,
-                previousOccupation: characterData.previousOccupation,
-                rebirthType: characterData.rebirthType,
-                personalityTraits: characterData.personalityTraits,
-                overpowered: characterData.overpowered,
-                age: characterData.age,
-                class: characterData.class,
-                appearance: {
-                    hairColor: characterData.hairColor,
-                    eyeColor: characterData.eyeColor,
-                    height: characterData.height,
-                    build: characterData.build,
-                    skinTone: characterData.skinTone,
-                    distinguishingFeatures: characterData.distinguishingFeatures
-                },
-                backstory: characterData.backstory
-            };
-
-            // Save character to Firebase as subcollection
-            await characterStore.createCharacter(storyId, characterToCreate);
-
-            alert('Story and character created successfully!');
-
-            // Reset form
-            handleClearAll();
-
-        } catch (error) {
-            console.error('Error creating story:', error);
-            const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-            alert(`Failed to create story: ${errorMessage}`);
-        } finally {
-            // setIsLoading(false);
-        }
-    };
-    */
-
     const toggleArrayItem = <T,>(array: T[], item: T, setter: (newArray: T[]) => void) => {
         if (array.includes(item)) {
             setter(array.filter(i => i !== item));
@@ -218,10 +135,25 @@ export default function CreateStoryPage() {
         }
     };
 
+    const calculateTotalArcs = (arcLength: ArcLength): number => {
+        switch (arcLength) {
+            case ArcLength.Short:
+                return Math.floor(Math.random() * (5 - 3 + 1)) + 3; // 3-5
+            case ArcLength.Medium:
+                return Math.floor(Math.random() * (12 - 6 + 1)) + 6; // 6-12
+            case ArcLength.Epic:
+                return Math.floor(Math.random() * (24 - 13 + 1)) + 13; // 13-24
+            case ArcLength.SurpriseMe:
+                return Math.floor(Math.random() * 25) + 1; // 1-25
+            default:
+                return 8; // fallback to medium range
+        }
+    };
+
     // Check if all required fields are filled
     const isFormValid = () => {
-        const storyValid = storyData.newWorldType && storyData.genreTags.length > 0;
-        const characterValid = characterData.name;
+        const storyValid = storyData.newWorldType && storyData.genreTags.length > 0 && storyData.influence && storyData.originWorld;
+        const characterValid = characterData.name && characterData.species && characterData.rebirthType && characterData.previousOccupation && characterData.characterOccupation;
         return storyValid && characterValid;
     };
 
@@ -231,8 +163,12 @@ export default function CreateStoryPage() {
             return;
         }
 
+        // Calculate totalArcs based on selected arcLength
+        const totalArcs = calculateTotalArcs(storyData.arcLength);
+        const storyDataWithArcs = { ...storyData, totalArcs };
+
         // Pass the story and character data through URL params or localStorage
-        localStorage.setItem('tempStoryData', JSON.stringify(storyData));
+        localStorage.setItem('tempStoryData', JSON.stringify(storyDataWithArcs));
         localStorage.setItem('tempCharacterData', JSON.stringify(characterData));
 
         router.push('/generate-storylines');
@@ -294,14 +230,6 @@ export default function CreateStoryPage() {
                                     placeholder="What deeper question does this story explore?"
                                 />
 
-                                <FormInput
-                                    label="Total Pages"
-                                    value={storyData.totalPages}
-                                    onChange={(value) => setStoryData({ ...storyData, totalPages: parseInt(value) || 100 })}
-                                    type="number"
-                                    min={1}
-                                    max={1000}
-                                />
                             </>
                         }
                     >
@@ -322,6 +250,15 @@ export default function CreateStoryPage() {
                             getDisplayText={(world) => world.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
                         />
 
+                        <FormSelect
+                            label="Origin World"
+                            value={storyData.originWorld}
+                            onChange={(value) => setStoryData({ ...storyData, originWorld: value! })}
+                            options={[...WORLDS] as any}
+                            required
+                            getDisplayText={(world) => world.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                        />
+
                         <ToggleButtonGroup
                             label="Genre Tags"
                             selectedItems={storyData.genreTags}
@@ -330,6 +267,14 @@ export default function CreateStoryPage() {
                             required
                             colorScheme="purple"
                             helpText="Click to select/deselect tags"
+                        />
+
+                        <FormSelect
+                            label="Arc Length"
+                            value={storyData.arcLength}
+                            onChange={(value) => setStoryData({ ...storyData, arcLength: value! })}
+                            options={Object.values(ArcLength)}
+                            required
                         />
                     </FormSection>
 
@@ -351,15 +296,6 @@ export default function CreateStoryPage() {
                                         placeholder="Age"
                                         min={1}
                                         max={1000}
-                                        className="focus:ring-cyan-500"
-                                    />
-
-                                    <FormSelect
-                                        label="Class"
-                                        value={characterData.class || ''}
-                                        onChange={(value) => setCharacterData({ ...characterData, class: value })}
-                                        options={Object.values(CharacterClass)}
-                                        placeholder="Select class..."
                                         className="focus:ring-cyan-500"
                                     />
                                 </div>

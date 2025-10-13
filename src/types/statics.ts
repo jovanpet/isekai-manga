@@ -97,6 +97,7 @@ export const TITLES = [
 
 export const WORLDS = [
     "fantasy kingdom",
+    "Earth",
     "magic academy",
     "demon realm",
     "post-apocalyptic earth",
@@ -104,6 +105,7 @@ export const WORLDS = [
     "floating island nation",
     "mechanical city",
     "underwater empire",
+    "Earth-like planet",
 ] as const;
 
 export const ROLES = [
@@ -211,6 +213,13 @@ export const CONFLICTS = [
     "Every victory makes him more like the enemy he swore to destroy.",
 ] as const;
 
+export enum ArcLength {
+    Short = "short",       // 3-5 chapters
+    Medium = "medium",     // 6-12 chapters
+    Epic = "long",         // 13-24 chapters
+    SurpriseMe = "surprise",   // random up to 25
+}
+
 // -------------------------------------------------------
 //  CHARACTER
 // -------------------------------------------------------
@@ -302,23 +311,6 @@ export enum BodyType {
     Stocky = "stocky",
     Petite = "petite",
     Tall = "tall",
-}
-
-export enum CharacterClass {
-    Warrior = "warrior",
-    Mage = "mage",
-    Thief = "thief",
-    Archer = "archer",
-    Healer = "healer",
-    Paladin = "paladin",
-    Necromancer = "necromancer",
-    Bard = "bard",
-    Monk = "monk",
-    Summoner = "summoner",
-    Alchemist = "alchemist",
-    Assassin = "assassin",
-    Druid = "druid",
-    None = "none",
 }
 
 export enum PreviousOccupations {

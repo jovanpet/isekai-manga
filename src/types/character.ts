@@ -19,7 +19,6 @@ export interface Character {
     characterOccupation?: string;
     previousOccupation?: statics.PreviousOccupations;
     rebirthType?: string;
-    class?: statics.CharacterClass;
     age?: number;
     backstory?: string;
 
@@ -46,8 +45,6 @@ export interface Character {
     currentOutfit?: string;
 
     overpowered: boolean;
-    originWorld?: string;
-    currentWorld?: string;
 
     createdAt?: any; // Firebase timestamp
     updatedAt?: any; // Firebase timestamp
@@ -77,7 +74,6 @@ export function randomCharacterPreset() {
             build: random(Object.values(statics.BodyType)),
             skinTone: random(Object.values(statics.SkinTone))
         },
-        class: random(Object.values(statics.CharacterClass)),
         age: Math.floor(Math.random() * 30) + 16
     };
 }

@@ -5,7 +5,8 @@ export interface StorylineOption {
     title: string;
     hook: string;
     short_summary: string;
-    description: string;
+    detailed_description: string;
+    goal: string;
 }
 
 export async function generateStorylines(storyData: any, characterData: any): Promise<StorylineOption[]> {

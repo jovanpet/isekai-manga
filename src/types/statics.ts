@@ -117,6 +117,7 @@ export const ROLES = [
     "merchant",
     "alchemist",
     "bard",
+    "none",
 ] as const;
 
 export const REBIRTH_TYPES = [
@@ -328,4 +329,6 @@ export enum PreviousOccupations {
     Chef = "chef",
     Artist = "artist",
     Baby = "baby",
+    None = "none",
+    Unemployed = "unemployed",
 }

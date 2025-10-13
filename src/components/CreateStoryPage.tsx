@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { CharacterRole } from '@/types';
 import {
     randomStoryPreset,
     randomCharacterPreset,
@@ -8,19 +10,19 @@ import {
     GenreTag,
     Gender,
     Species,
-    CharacterRole,
     CharacterClass,
     Trait,
-    Weakness,
     HairColor,
     EyeColor,
     BodyType,
     SkinTone,
     Tone,
-    PreviousOccupations,
     Theme,
-    ROLES
+    ROLES,
+    WORLDS,
+    REBIRTH_TYPES
 } from '@/types';
+import { PreviousOccupations } from '@/types/statics';
 import {
     FormInput,
     FormSelect,
@@ -31,11 +33,13 @@ import {
 } from '@/components/forms';
 
 export default function CreateStoryPage() {
+    const router = useRouter();
+
     // Story state
     const [storyData, setStoryData] = useState({
         title: '',
         influence: Influence.Original,
-        newWorldType: '',
+        newWorldType: WORLDS[0],
         genreTags: [] as GenreTag[],
         description: '',
         tone: undefined as Tone | undefined,
@@ -51,7 +55,8 @@ export default function CreateStoryPage() {
         species: Species.Human,
         role: CharacterRole.Protagonist,
         characterOccupation: ROLES[0],
-        previousOccupation: undefined as PreviousOccupations | undefined,
+        previousOccupation: PreviousOccupations.HighSchoolStudent,
+        rebirthType: REBIRTH_TYPES[0],
         personalityTraits: [] as Trait[],
         overpowered: false,
         age: undefined as number | undefined,
@@ -69,37 +74,21 @@ export default function CreateStoryPage() {
     const handleStoryAutoFill = () => {
         const preset = randomStoryPreset();
         setStoryData({
-            title: preset.title,
+            ...storyData,
             influence: preset.influence,
-            newWorldType: preset.newWorldType,
-            genreTags: preset.genreTags,
-            description: storyData.description,
-            tone: preset.plot.tone,
-            themes: preset.plot.themes || [],
-            moralQuestion: '',
-            totalPages: preset.totalPages
+            newWorldType: preset.newWorldType as any,
+            genreTags: preset.genreTags
         });
     };
 
     const handleCharacterAutoFill = () => {
         const preset = randomCharacterPreset();
         setCharacterData({
+            ...characterData,
             name: preset.name,
             gender: preset.gender,
             species: preset.species,
-            role: preset.role,
-            characterOccupation: preset.characterOccupation || '',
-            personalityTraits: preset.personalityTraits,
-            overpowered: preset.overpowered,
-            age: preset.age,
-            class: preset.class,
-            hairColor: preset.appearance.hairColor,
-            eyeColor: preset.appearance.eyeColor,
-            height: characterData.height,
-            build: preset.appearance.build,
-            distinguishingFeatures: characterData.distinguishingFeatures,
-            skinTone: preset.appearance.skinTone,
-            backstory: characterData.backstory
+            rebirthType: preset.rebirthType as any
         });
     };
 
@@ -107,7 +96,7 @@ export default function CreateStoryPage() {
         setStoryData({
             title: '',
             influence: Influence.Original,
-            newWorldType: '',
+            newWorldType: WORLDS[0],
             genreTags: [],
             description: '',
             tone: undefined,
@@ -122,7 +111,8 @@ export default function CreateStoryPage() {
             species: Species.Human,
             role: CharacterRole.Protagonist,
             characterOccupation: ROLES[0],
-            previousOccupation: undefined,
+            previousOccupation: PreviousOccupations.HighSchoolStudent,
+            rebirthType: REBIRTH_TYPES[0],
             personalityTraits: [],
             overpowered: false,
             age: undefined,
@@ -137,10 +127,88 @@ export default function CreateStoryPage() {
         });
     };
 
-    const handleSubmit = () => {
-        console.log('Story Data:', storyData);
-        console.log('Character Data:', characterData);
+    /*
+    // Legacy function - replaced by storyline generation workflow
+    const handleSubmit = async () => {
+        try {
+            setIsLoading(true);
+
+            // Validate required fields
+            if (!storyData.newWorldType || storyData.genreTags.length === 0) {
+                alert('Please fill in all required story fields');
+                setIsLoading(false);
+                return;
+            }
+
+            if (!characterData.name) {
+                alert('Please fill in all required character fields');
+                setIsLoading(false);
+                return;
+            }
+
+            // Create story data
+            const storyToCreate = {
+                title: storyData.title || 'Untitled Story',
+                plot: {
+                    goal: '',
+                    conflict: '',
+                    premise: '',
+                    themes: storyData.themes,
+                    tone: storyData.tone,
+                    moralQuestion: storyData.moralQuestion
+                },
+                influence: storyData.influence,
+                newWorldType: storyData.newWorldType,
+                genreTags: storyData.genreTags,
+                description: storyData.description,
+                totalPages: storyData.totalPages,
+                status: StoryStatus.Draft
+            };
+
+            // Save story to Firebase
+            const storyId = await storyStore.createStory(storyToCreate);
+
+            // Create character data
+            const characterToCreate = {
+                name: characterData.name,
+                gender: characterData.gender,
+                species: characterData.species,
+                role: CharacterRole.Protagonist,
+                characterOccupation: characterData.characterOccupation,
+                previousOccupation: characterData.previousOccupation,
+                rebirthType: characterData.rebirthType,
+                personalityTraits: characterData.personalityTraits,
+                overpowered: characterData.overpowered,
+                age: characterData.age,
+                class: characterData.class,
+                appearance: {
+                    hairColor: characterData.hairColor,
+                    eyeColor: characterData.eyeColor,
+                    height: characterData.height,
+                    build: characterData.build,
+                    skinTone: characterData.skinTone,
+                    distinguishingFeatures: characterData.distinguishingFeatures
+                },
+                backstory: characterData.backstory
+            };
+
+            // Save character to Firebase as subcollection
+            await characterStore.createCharacter(storyId, characterToCreate);
+
+            alert('Story and character created successfully!');
+
+            // Reset form
+            handleClearAll();
+
+        } catch (error) {
+            console.error('Error creating story:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+            alert(`Failed to create story: ${errorMessage}`);
+        } finally {
+            // setIsLoading(false);
+        }
     };
+    */
 
     const toggleArrayItem = <T,>(array: T[], item: T, setter: (newArray: T[]) => void) => {
         if (array.includes(item)) {
@@ -148,6 +216,26 @@ export default function CreateStoryPage() {
         } else {
             setter([...array, item]);
         }
+    };
+
+    // Check if all required fields are filled
+    const isFormValid = () => {
+        const storyValid = storyData.newWorldType && storyData.genreTags.length > 0;
+        const characterValid = characterData.name;
+        return storyValid && characterValid;
+    };
+
+    const handleGenerateStorylines = () => {
+        if (!isFormValid()) {
+            alert('Please fill in all required fields before generating storylines');
+            return;
+        }
+
+        // Pass the story and character data through URL params or localStorage
+        localStorage.setItem('tempStoryData', JSON.stringify(storyData));
+        localStorage.setItem('tempCharacterData', JSON.stringify(characterData));
+
+        router.push('/generate-storylines');
     };
 
     return (
@@ -225,12 +313,13 @@ export default function CreateStoryPage() {
                             required
                         />
 
-                        <FormInput
+                        <FormSelect
                             label="New World Type"
                             value={storyData.newWorldType}
-                            onChange={(value) => setStoryData({ ...storyData, newWorldType: value })}
-                            placeholder="e.g., Medieval Fantasy Kingdom..."
+                            onChange={(value) => setStoryData({ ...storyData, newWorldType: value! })}
+                            options={[...WORLDS] as any}
                             required
+                            getDisplayText={(world) => world.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
                         />
 
                         <ToggleButtonGroup
@@ -335,6 +424,15 @@ export default function CreateStoryPage() {
                                     rows={4}
                                     className="focus:ring-cyan-500"
                                 />
+
+                                <ToggleButtonGroup
+                                    label="Personality Traits"
+                                    selectedItems={characterData.personalityTraits}
+                                    onToggle={(trait) => toggleArrayItem(characterData.personalityTraits, trait, (newTraits) => setCharacterData({ ...characterData, personalityTraits: newTraits }))}
+                                    options={Object.values(Trait)}
+                                    colorScheme="cyan"
+                                    helpText="Click to select/deselect traits"
+                                />
                             </>
                         }
                     >
@@ -364,10 +462,21 @@ export default function CreateStoryPage() {
                             required
                             className="focus:ring-cyan-500"
                         />
+
+                        <FormSelect
+                            label="Rebirth Type"
+                            value={characterData.rebirthType}
+                            onChange={(value) => setCharacterData({ ...characterData, rebirthType: value! })}
+                            options={[...REBIRTH_TYPES] as any}
+                            required
+                            className="focus:ring-cyan-500"
+                            getDisplayText={(type) => type.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                        />
+
                         <FormSelect
                             label="Previous Occupation"
                             value={characterData.previousOccupation}
-                            onChange={(value) => setCharacterData({ ...characterData, previousOccupation: value! })}
+                            onChange={(value) => setCharacterData({ ...characterData, previousOccupation: value as PreviousOccupations })}
                             options={Object.values(PreviousOccupations)}
                             required
                             className="focus:ring-cyan-500"
@@ -377,20 +486,10 @@ export default function CreateStoryPage() {
                             label="Character Occupation"
                             value={characterData.characterOccupation}
                             onChange={(value) => setCharacterData({ ...characterData, characterOccupation: value! })}
-                            options={ROLES}
+                            options={[...ROLES] as any}
                             required
                             className="focus:ring-cyan-500"
                             getDisplayText={(role) => role.charAt(0).toUpperCase() + role.slice(1)}
-                        />
-
-                        <ToggleButtonGroup
-                            label="Personality Traits"
-                            selectedItems={characterData.personalityTraits}
-                            onToggle={(trait) => toggleArrayItem(characterData.personalityTraits, trait, (newTraits) => setCharacterData({ ...characterData, personalityTraits: newTraits }))}
-                            options={Object.values(Trait)}
-                            required
-                            colorScheme="cyan"
-                            helpText="Click to select/deselect traits"
                         />
 
                         <CheckboxField
@@ -403,11 +502,12 @@ export default function CreateStoryPage() {
                     </FormSection>
                 </div>
 
-                {/* Submit Button */}
+                {/* Action Button */}
                 <div className="mt-8 text-center">
                     <button
-                        onClick={handleSubmit}
-                        className="px-8 py-4 bg-gradient-to-r from-purple-600 via-pink-600 to-cyan-600 text-white font-bold rounded-xl shadow-lg hover:from-purple-700 hover:via-pink-700 hover:to-cyan-700 transition-all duration-300 transform hover:scale-105 text-lg"
+                        onClick={handleGenerateStorylines}
+                        disabled={!isFormValid()}
+                        className="px-8 py-4 bg-gradient-to-r from-purple-600 via-pink-600 to-cyan-600 text-white font-bold rounded-xl shadow-lg hover:from-purple-700 hover:via-pink-700 hover:to-cyan-700 transition-all duration-300 transform hover:scale-105 text-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                     >
                         Create Story
                     </button>

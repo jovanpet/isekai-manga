@@ -1,5 +1,4 @@
 import * as statics from "./statics";
-import { Character } from "./character";
 
 export interface Plot {
     premise?: string;               // main setup or inciting incident
@@ -24,7 +23,6 @@ export interface Story {
     updatedAt: string;
     userId?: string;
     mainCharacterId?: string;
-    characters: Character[];
 }
 
 const random = <T>(arr: readonly T[]): T => arr[Math.floor(Math.random() * arr.length)];

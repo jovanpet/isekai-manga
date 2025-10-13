@@ -18,6 +18,7 @@ export interface Character {
     role: statics.CharacterRole;
     characterOccupation?: string;
     previousOccupation?: statics.PreviousOccupations;
+    rebirthType?: string;
     class?: statics.CharacterClass;
     age?: number;
     backstory?: string;
@@ -48,8 +49,8 @@ export interface Character {
     originWorld?: string;
     currentWorld?: string;
 
-    createdAt: string;
-    updatedAt?: string;
+    createdAt?: any; // Firebase timestamp
+    updatedAt?: any; // Firebase timestamp
 }
 
 const random = <T>(arr: readonly T[]): T => arr[Math.floor(Math.random() * arr.length)];
@@ -63,8 +64,10 @@ export function randomCharacterPreset() {
         role: random(Object.values(statics.CharacterRole)),
         previousOccupation: random(Object.values(statics.PreviousOccupations)),
         characterOccupation: random(statics.ROLES),
+        rebirthType: random(statics.REBIRTH_TYPES),
         personalityTraits: [
             random(Object.values(statics.Trait)),
+
             random(Object.values(statics.Trait))
         ],
         overpowered: randomBool(),

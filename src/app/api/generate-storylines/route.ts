@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const prompt = buildStorylinePrompt(storyData, characterData);
+        const prompt = buildStorylinePrompt(storyData);
         const response = await runGemini(prompt);
 
         // Parse JSON response

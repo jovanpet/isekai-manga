@@ -1,5 +1,5 @@
-import { runGemini } from './geminiClient';
-import { buildStorylinePrompt } from './prompts/storylinePrompts';
+import { runGemini } from '../geminiClient';
+import { buildStorylinePrompt } from '../prompts/storylinePrompts';
 
 export interface StorylineOption {
     title: string;
@@ -9,9 +9,9 @@ export interface StorylineOption {
     goal: string;
 }
 
-export async function generateStorylines(storyData: any, characterData: any): Promise<StorylineOption[]> {
+export async function generateStorylines(storyData: any): Promise<StorylineOption[]> {
     try {
-        const prompt = buildStorylinePrompt(storyData, characterData);
+        const prompt = buildStorylinePrompt(storyData);
         const response = await runGemini(prompt);
 
         const cleanedResponse = response.replace(/```json\n?|```\n?/g, '').trim();

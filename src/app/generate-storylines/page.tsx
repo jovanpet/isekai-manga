@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { generateStorylines, StorylineOption } from '@/generation/storylineService';
+import { generateStorylines, StorylineOption } from '@/generation/services/storylineService';
+import { createStoryFromStoryline } from '@/generation/services/storyCreationService';
 import StorylineCard from '@/components/StorylineCard';
-import { storyStore, characterStore } from '@/store';
 
 export default function GenerateStorylinesPage() {
     const [storylines, setStorylines] = useState<StorylineOption[]>([]);
@@ -12,7 +12,6 @@ export default function GenerateStorylinesPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [storyData, setStoryData] = useState<any>(null);
-    const [characterData, setCharacterData] = useState<any>(null);
     const [isSaving, setIsSaving] = useState(false);
     const router = useRouter();
 
@@ -21,22 +20,18 @@ export default function GenerateStorylinesPage() {
             try {
                 // Load data from localStorage
                 const tempStoryData = localStorage.getItem('tempStoryData');
-                const tempCharacterData = localStorage.getItem('tempCharacterData');
 
-                if (!tempStoryData || !tempCharacterData) {
+                if (!tempStoryData) {
                     setError('No story data found. Please fill out the form first.');
                     setIsLoading(false);
                     return;
                 }
 
                 const parsedStoryData = JSON.parse(tempStoryData);
-                const parsedCharacterData = JSON.parse(tempCharacterData);
-
                 setStoryData(parsedStoryData);
-                setCharacterData(parsedCharacterData);
 
                 // Generate storylines using Gemini
-                const generatedStorylines = await generateStorylines(parsedStoryData, parsedCharacterData);
+                const generatedStorylines = await generateStorylines(parsedStoryData);
                 setStorylines(generatedStorylines);
             } catch (error) {
                 console.error('Error generating storylines:', error);
@@ -54,35 +49,22 @@ export default function GenerateStorylinesPage() {
     };
 
     const handleUseStoryline = async () => {
-        if (!selectedStoryline || !storyData || !characterData) return;
+        if (!selectedStoryline || !storyData) return;
 
         setIsSaving(true);
 
         try {
-            // Update the story data with selected storyline
-            const updatedStoryData = {
-                ...storyData,
-                title: selectedStoryline.title,
-                summary: selectedStoryline.short_summary,
-                description: selectedStoryline.detailed_description,
-                plot: {
-                    ...storyData.plot,
-                    goal: selectedStoryline.goal
-                }
-            };
-
-            // Save story to Firebase
-            const storyId = await storyStore.createStory(updatedStoryData);
-
-            // Save character to Firebase under the story
-            await characterStore.createCharacter(storyId, characterData);
+            // Create story using the dedicated service
+            const { storyId } = await createStoryFromStoryline({
+                storyData,
+                selectedStoryline
+            });
 
             // Clean up localStorage
             localStorage.removeItem('tempStoryData');
-            localStorage.removeItem('tempCharacterData');
 
-            // Navigate to success page or story list
-            router.push('/stories');
+            // Navigate to the story display page
+            router.push(`/story/${storyId}`);
         } catch (error) {
             console.error('Error saving story:', error);
             setError('Failed to save story. Please try again.');
@@ -96,14 +78,14 @@ export default function GenerateStorylinesPage() {
     };
 
     const handleRegenerateStorylines = async () => {
-        if (!storyData || !characterData) return;
+        if (!storyData) return;
 
         setIsLoading(true);
         setError(null);
         setSelectedStoryline(null);
 
         try {
-            const generatedStorylines = await generateStorylines(storyData, characterData);
+            const generatedStorylines = await generateStorylines(storyData);
             setStorylines(generatedStorylines);
         } catch (error) {
             console.error('Error regenerating storylines:', error);
@@ -160,7 +142,7 @@ export default function GenerateStorylinesPage() {
                         <div className="text-center">
                             <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-green-400 mx-auto mb-4"></div>
                             <p className="text-gray-300 text-lg">Creating story...</p>
-                            <p className="text-gray-400 text-sm mt-2">Saving your story and character</p>
+                            <p className="text-gray-400 text-sm mt-2">Generating arcs, objectives, threads, and saving your story</p>
                         </div>
                     </div>
                 )}

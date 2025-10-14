@@ -234,6 +234,8 @@ export enum Gender {
 export enum CharacterRole {
     Protagonist = "protagonist",
     Companion = "companion",
+    Mentor = "mentor",
+    Rival = "rival",
     Villain = "villain",
     Support = "support",
 }

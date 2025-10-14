@@ -12,40 +12,18 @@ import {
     serverTimestamp
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Story } from '@/types/story/story';
 import { StoryDetails } from '@/types/story_details';
-import { Arc } from '@/types/story/arc';
-import { Objective } from '@/types/story/objective';
-import { Thread } from '@/types/story/thread';
-import { Character } from '@/types/character';
 
-const COLLECTION_NAME = 'stories';
+const COLLECTION_NAME = 'story_details';
 
-export const storyStore = {
-    async createStory(storyDetails: StoryDetails, arcs: Arc[] = [], objectives: Objective[] = [], threads: Thread[] = [], characters: Character[] = []): Promise<string> {
+export const storyDetailsStore = {
+    async createStory(storyData: Omit<StoryDetails, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
         try {
-            // First save the StoryDetails to get an ID
-            const storyDetailsRef = await addDoc(collection(db, 'story_details'), {
-                ...storyDetails,
-                createdAt: serverTimestamp(),
-                updatedAt: serverTimestamp(),
-            });
-
-            // Create the full Story object
-            const storyData: Omit<Story, 'id'> = {
-                arcs,
-                objectives,
-                threads,
-                characters,
-                storyDetailsId: storyDetailsRef.id
-            };
-
             const docRef = await addDoc(collection(db, COLLECTION_NAME), {
                 ...storyData,
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
             });
-
             return docRef.id;
         } catch (error) {
             console.error('Error creating story:', error);
@@ -53,7 +31,7 @@ export const storyStore = {
         }
     },
 
-    async getStory(id: string): Promise<Story | null> {
+    async getStory(id: string): Promise<StoryDetails | null> {
         try {
             const docRef = doc(db, COLLECTION_NAME, id);
             const docSnap = await getDoc(docRef);
@@ -62,7 +40,7 @@ export const storyStore = {
                 return {
                     id: docSnap.id,
                     ...docSnap.data(),
-                } as Story;
+                } as StoryDetails;
             }
 
             return null;
@@ -72,32 +50,7 @@ export const storyStore = {
         }
     },
 
-    async getStoryWithDetails(id: string): Promise<(Story & { details: StoryDetails }) | null> {
-        try {
-            const story = await this.getStory(id);
-            if (!story) return null;
-
-            const detailsRef = doc(db, 'story_details', story.storyDetailsId);
-            const detailsSnap = await getDoc(detailsRef);
-
-            if (detailsSnap.exists()) {
-                return {
-                    ...story,
-                    details: {
-                        id: detailsSnap.id,
-                        ...detailsSnap.data(),
-                    } as StoryDetails
-                };
-            }
-
-            return null;
-        } catch (error) {
-            console.error('Error getting story with details:', error);
-            throw error;
-        }
-    },
-
-    async updateStory(id: string, updates: Partial<Omit<Story, 'id' | 'createdAt'>>): Promise<void> {
+    async updateStory(id: string, updates: Partial<Omit<StoryDetails, 'id' | 'createdAt'>>): Promise<void> {
         try {
             const docRef = doc(db, COLLECTION_NAME, id);
             await updateDoc(docRef, {
@@ -120,7 +73,7 @@ export const storyStore = {
         }
     },
 
-    async getAllStories(): Promise<Story[]> {
+    async getAllStories(): Promise<StoryDetails[]> {
         try {
             const q = query(collection(db, COLLECTION_NAME), orderBy('createdAt', 'desc'));
             const querySnapshot = await getDocs(q);
@@ -128,14 +81,14 @@ export const storyStore = {
             return querySnapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data(),
-            })) as Story[];
+            })) as StoryDetails[];
         } catch (error) {
             console.error('Error getting all stories:', error);
             throw error;
         }
     },
 
-    async getStoriesByUser(userId: string): Promise<Story[]> {
+    async getStoriesByUser(userId: string): Promise<StoryDetails[]> {
         try {
             const q = query(
                 collection(db, COLLECTION_NAME),
@@ -147,9 +100,28 @@ export const storyStore = {
             return querySnapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data(),
-            })) as Story[];
+            })) as StoryDetails[];
         } catch (error) {
             console.error('Error getting user stories:', error);
+            throw error;
+        }
+    },
+
+    async getStoriesByStatus(status: string): Promise<StoryDetails[]> {
+        try {
+            const q = query(
+                collection(db, COLLECTION_NAME),
+                where('status', '==', status),
+                orderBy('createdAt', 'desc')
+            );
+            const querySnapshot = await getDocs(q);
+
+            return querySnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data(),
+            })) as StoryDetails[];
+        } catch (error) {
+            console.error('Error getting stories by status:', error);
             throw error;
         }
     },

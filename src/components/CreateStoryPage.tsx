@@ -55,6 +55,7 @@ export default function CreateStoryPage() {
         gender: Gender.Male,
         species: Species.Human,
         role: CharacterRole.Protagonist,
+        status: 'active',
         characterOccupation: ROLES[0],
         previousOccupation: PreviousOccupations.HighSchoolStudent,
         rebirthType: REBIRTH_TYPES[0],
@@ -111,6 +112,7 @@ export default function CreateStoryPage() {
             gender: Gender.Male,
             species: Species.Human,
             role: CharacterRole.Protagonist,
+            status: 'active',
             characterOccupation: ROLES[0],
             previousOccupation: PreviousOccupations.HighSchoolStudent,
             rebirthType: REBIRTH_TYPES[0],
@@ -165,11 +167,14 @@ export default function CreateStoryPage() {
 
         // Calculate totalArcs based on selected arcLength
         const totalArcs = calculateTotalArcs(storyData.arcLength);
-        const storyDataWithArcs = { ...storyData, totalArcs };
+        const storyDataWithArcs = {
+            ...storyData,
+            totalArcs,
+            mainCharacter: characterData
+        };
 
-        // Pass the story and character data through URL params or localStorage
+        // Pass the story data with embedded character through localStorage
         localStorage.setItem('tempStoryData', JSON.stringify(storyDataWithArcs));
-        localStorage.setItem('tempCharacterData', JSON.stringify(characterData));
 
         router.push('/generate-storylines');
     };

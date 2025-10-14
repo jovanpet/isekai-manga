@@ -21,6 +21,7 @@ export interface Character {
     rebirthType?: string;
     age?: number;
     backstory?: string;
+    status: 'active' | 'inactive';
 
     // personality
     personalityTraits: statics.Trait[];

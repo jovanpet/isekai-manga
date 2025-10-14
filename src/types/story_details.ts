@@ -1,3 +1,4 @@
+import { Character } from "./character";
 import * as statics from "./statics";
 
 export interface Plot {
@@ -8,7 +9,7 @@ export interface Plot {
     moralQuestion?: string;         // deeper meaning or moral core
 }
 
-export interface Story {
+export interface StoryDetails {
     id: string;
     title: string;
     plot: Plot;
@@ -23,7 +24,7 @@ export interface Story {
     createdAt: string;
     updatedAt: string;
     userId?: string;
-    mainCharacterId?: string;
+    mainCharacter: Character;
 }
 
 const random = <T>(arr: readonly T[]): T => arr[Math.floor(Math.random() * arr.length)];

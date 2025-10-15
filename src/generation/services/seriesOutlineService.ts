@@ -1,5 +1,6 @@
 import { runGemini } from '../geminiClient';
 import { buildSeriesOutlinePrompt } from '../prompts/seriesOutlinePrompt';
+import { safeJsonParse } from '../utils/jsonParser';
 import { StoryDetails } from '@/types/story_details';
 
 export interface ArcOutline {
@@ -20,9 +21,7 @@ export async function generateSeriesOutline(storyDetails: StoryDetails): Promise
         const prompt = buildSeriesOutlinePrompt(storyDetails, storyDetails.mainCharacter);
         const response = await runGemini(prompt);
 
-        const cleanedResponse = response.replace(/```json\n?|```\n?/g, '').trim();
-        const outlineData = JSON.parse(cleanedResponse) as SeriesOutlineResponse;
-
+        const outlineData = safeJsonParse<SeriesOutlineResponse>(response, 'series outline generation');
         return outlineData.arcs;
     } catch (error) {
         console.error('Error generating series outline:', error);

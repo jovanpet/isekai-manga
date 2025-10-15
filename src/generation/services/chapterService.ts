@@ -1,6 +1,8 @@
 import { runGemini } from '../geminiClient';
 import { buildChaptersPrompt } from '../prompts/chapterGenerationPrompt';
 import { buildCharacterTypePrompt } from '../prompts/generateCharcters';
+import { generatePagesForChapter } from './pageService';
+import { safeJsonParse } from '../utils/jsonParser';
 import { Story } from '@/types/story/story';
 import { Chapter } from '@/types/story/arc';
 import { Character } from '@/types/character';
@@ -32,11 +34,8 @@ export async function generateChaptersForArc(story: Story, arcIndex: number): Pr
         const prompt = buildChaptersPrompt(story, arcIndex);
         const response = await runGemini(prompt);
 
-        // Clean up the response to extract JSON
-        const cleanedResponse = response.replace(/```json\n?|```\n?/g, '').trim();
-
-        // Parse the response
-        const chapterData = JSON.parse(cleanedResponse) as ChapterGenerationResponse;
+        // Parse the response using safe JSON parser
+        const chapterData = safeJsonParse<ChapterGenerationResponse>(response, 'chapter generation');
 
         return chapterData;
     } catch (error) {
@@ -94,10 +93,8 @@ export async function processCharacters(
             try {
                 const charGenPrompt = buildCharacterTypePrompt(basicCharacter as Character);
                 const charResponse = await runGemini(charGenPrompt);
-                const cleanedCharResponse = charResponse.replace(/```json\n?|```\n?/g, '').trim();
-
                 // Parse as array since the prompt returns an array
-                const charData = JSON.parse(cleanedCharResponse);
+                const charData = safeJsonParse<any>(charResponse, 'character generation');
                 const generatedData = Array.isArray(charData) ? charData[0] : charData;
 
                 // Merge generated data with basic character
@@ -159,5 +156,22 @@ function mapRole(role: string): CharacterRole {
         case 'villain': return CharacterRole.Villain;
         case 'support': return CharacterRole.Support;
         default: return CharacterRole.Support;
+    }
+}
+
+export async function addPagesToChapter(chapter: Chapter, story: Story): Promise<Chapter> {
+    try {
+        const pageResponse = await generatePagesForChapter(chapter, story);
+        return {
+            ...chapter,
+            pages: pageResponse.pages
+        };
+    } catch (error) {
+        console.error(`Error generating pages for chapter ${chapter.chapterTitle}:`, error);
+        // Return chapter without pages if page generation fails
+        return {
+            ...chapter,
+            pages: []
+        };
     }
 }

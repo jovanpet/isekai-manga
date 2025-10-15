@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { storyStore } from '@/store';
+import { generatePagesForChapter } from '@/generation/services/pageService';
 import { Story } from '@/types/story/story';
 import { StoryDetails } from '@/types/story_details';
 import { Chapter } from '@/types/story/arc';
@@ -12,6 +13,7 @@ export default function ChapterViewPage() {
     const [chapter, setChapter] = useState<Chapter | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [isGeneratingPages, setIsGeneratingPages] = useState(false);
     const router = useRouter();
     const params = useParams();
     const storyId = params.id as string;
@@ -53,6 +55,47 @@ export default function ChapterViewPage() {
             loadChapter();
         }
     }, [storyId, arcIndex, chapterIndex]);
+
+    const handleGeneratePages = async () => {
+        if (!story || !chapter) return;
+
+        setIsGeneratingPages(true);
+        setError(null);
+
+        try {
+            // Generate pages for this chapter
+            const pageResponse = await generatePagesForChapter(chapter, story);
+
+            // Update the chapter with generated pages
+            const updatedArcs = [...story.arcs];
+            updatedArcs[arcIndex] = {
+                ...updatedArcs[arcIndex],
+                chapters: updatedArcs[arcIndex].chapters?.map((ch, idx) =>
+                    idx === chapterIndex ? { ...ch, pages: pageResponse.pages } : ch
+                ) || []
+            };
+
+            // Update Firestore
+            await storyStore.updateStory(storyId, {
+                arcs: updatedArcs
+            });
+
+            // Update local state
+            setChapter({
+                ...chapter,
+                pages: pageResponse.pages
+            });
+
+            // Reload the story
+            const updatedStoryWithDetails = await storyStore.getStoryWithDetails(storyId);
+            setStory(updatedStoryWithDetails);
+        } catch (error) {
+            console.error('Error generating pages:', error);
+            setError('Failed to generate pages. Please try again.');
+        } finally {
+            setIsGeneratingPages(false);
+        }
+    };
 
     const getOutcomeColor = (outcomeType: string) => {
         switch (outcomeType) {
@@ -175,6 +218,159 @@ export default function ChapterViewPage() {
                     )}
                 </div>
 
+                {/* Pages */}
+                {chapter.pages && chapter.pages.length > 0 && (
+                    <div className="bg-gradient-to-br from-indigo-800/50 to-purple-800/50 backdrop-blur-sm rounded-xl p-8 mb-8">
+                        <h2 className="text-2xl font-bold text-indigo-300 mb-6">Manga Pages ({chapter.pages.length})</h2>
+
+                        <div className="space-y-8">
+                            {chapter.pages.map((page, pageIndex) => (
+                                <div key={page.id} className="bg-black/30 rounded-lg p-6">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h3 className="text-lg font-bold text-indigo-200">
+                                            Page {page.order} - {page.pageType === 'splash' ? 'Full Page' : 'Multi Panel'}
+                                        </h3>
+                                        <div className="flex gap-2">
+                                            {page.pageType === 'splash' && (
+                                                <span className="px-2 py-1 rounded text-xs bg-red-600/50 text-red-200">
+                                                    Splash
+                                                </span>
+                                            )}
+                                            {page.layoutType && (
+                                                <span className="px-2 py-1 rounded text-xs bg-blue-600/50 text-blue-200">
+                                                    {page.layoutType}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="mb-4">
+                                        <span className="text-gray-400 font-semibold text-sm">Page Description:</span>
+                                        <p className="text-gray-300 text-sm mt-1">{page.description}</p>
+                                    </div>
+
+                                    {page.emotion && (
+                                        <div className="mb-4">
+                                            <span className="text-gray-400 font-semibold text-sm">Emotion:</span>
+                                            <span className="text-yellow-300 text-sm ml-2">{page.emotion}</span>
+                                        </div>
+                                    )}
+
+                                    {/* Splash Page Panel */}
+                                    {page.pageType === 'splash' && page.panel && (
+                                        <div className="bg-black/20 rounded p-4">
+                                            <h4 className="text-md font-bold text-indigo-100 mb-3">Full Page Panel</h4>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                                <div>
+                                                    <span className="text-gray-400 font-semibold">Scene:</span>
+                                                    <p className="text-gray-300 mt-1">{page.panel.description}</p>
+                                                </div>
+                                                {page.panel.dialogue && (
+                                                    <div>
+                                                        <span className="text-gray-400 font-semibold">Dialogue:</span>
+                                                        <p className="text-gray-300 mt-1 italic">"{page.panel.dialogue}"</p>
+                                                    </div>
+                                                )}
+                                                {page.panel.focusCharacters && page.panel.focusCharacters.length > 0 && (
+                                                    <div>
+                                                        <span className="text-gray-400 font-semibold">Characters:</span>
+                                                        <div className="flex flex-wrap gap-1 mt-1">
+                                                            {page.panel.focusCharacters.map((char, charIndex) => (
+                                                                <span key={charIndex} className="bg-green-600/50 px-2 py-1 rounded text-xs text-green-200">
+                                                                    {char}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {page.panel.settingHint && (
+                                                    <div>
+                                                        <span className="text-gray-400 font-semibold">Setting:</span>
+                                                        <p className="text-gray-300 mt-1">{page.panel.settingHint}</p>
+                                                    </div>
+                                                )}
+                                                {page.panel.cameraAngle && (
+                                                    <div>
+                                                        <span className="text-gray-400 font-semibold">Camera:</span>
+                                                        <p className="text-gray-300 mt-1">{page.panel.cameraAngle}</p>
+                                                    </div>
+                                                )}
+                                                {page.panel.soundEffect && (
+                                                    <div>
+                                                        <span className="text-gray-400 font-semibold">Sound:</span>
+                                                        <p className="text-orange-300 mt-1 font-bold">{page.panel.soundEffect}</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Multi Page Panels */}
+                                    {page.pageType === 'multi' && page.panels && page.panels.length > 0 && (
+                                        <div className="space-y-4">
+                                            <h4 className="text-md font-bold text-indigo-100">Panels ({page.panels.length})</h4>
+                                            {page.panels.map((panel, panelIndex) => (
+                                                <div key={panel.id} className="bg-black/20 rounded p-4">
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <h5 className="text-sm font-bold text-indigo-50">Panel {panel.order}</h5>
+                                                        {panel.emotion && (
+                                                            <span className="px-2 py-1 rounded text-xs bg-yellow-600/50 text-yellow-200">
+                                                                {panel.emotion}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                                                        <div>
+                                                            <span className="text-gray-400 font-semibold">Scene:</span>
+                                                            <p className="text-gray-300 mt-1">{panel.description}</p>
+                                                        </div>
+                                                        {panel.dialogue && (
+                                                            <div>
+                                                                <span className="text-gray-400 font-semibold">Dialogue:</span>
+                                                                <p className="text-gray-300 mt-1 italic">"{panel.dialogue}"</p>
+                                                            </div>
+                                                        )}
+                                                        {panel.focusCharacters && panel.focusCharacters.length > 0 && (
+                                                            <div>
+                                                                <span className="text-gray-400 font-semibold">Characters:</span>
+                                                                <div className="flex flex-wrap gap-1 mt-1">
+                                                                    {panel.focusCharacters.map((char, charIndex) => (
+                                                                        <span key={charIndex} className="bg-green-600/50 px-2 py-1 rounded text-xs text-green-200">
+                                                                            {char}
+                                                                        </span>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                        {panel.settingHint && (
+                                                            <div>
+                                                                <span className="text-gray-400 font-semibold">Setting:</span>
+                                                                <p className="text-gray-300 mt-1">{panel.settingHint}</p>
+                                                            </div>
+                                                        )}
+                                                        {panel.cameraAngle && (
+                                                            <div>
+                                                                <span className="text-gray-400 font-semibold">Camera:</span>
+                                                                <p className="text-gray-300 mt-1">{panel.cameraAngle}</p>
+                                                            </div>
+                                                        )}
+                                                        {panel.soundEffect && (
+                                                            <div>
+                                                                <span className="text-gray-400 font-semibold">Sound:</span>
+                                                                <p className="text-orange-300 mt-1 font-bold">{panel.soundEffect}</p>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 {/* Navigation */}
                 <div className="flex justify-between items-center">
                     <div className="flex gap-2">
@@ -203,20 +399,33 @@ export default function ChapterViewPage() {
                         )}
                     </div>
 
-                    {(hasNextChapter || hasNextArc) && (
-                        <button
-                            onClick={() => {
-                                if (hasNextChapter) {
-                                    router.push(`/story/${storyId}/chapter/${arcIndex}/${chapterIndex + 1}`);
-                                } else if (hasNextArc) {
-                                    router.push(`/story/${storyId}/chapter/${arcIndex + 1}/0`);
-                                }
-                            }}
-                            className="px-4 py-2 bg-gradient-to-r from-cyan-600 to-teal-600 text-white font-bold rounded-lg hover:from-cyan-700 hover:to-teal-700 transition-all duration-300"
-                        >
-                            Next Chapter →
-                        </button>
-                    )}
+                    <div className="flex gap-2">
+                        {/* Generate Pages Button */}
+                        {(!chapter.pages || chapter.pages.length === 0) && (
+                            <button
+                                onClick={handleGeneratePages}
+                                disabled={isGeneratingPages}
+                                className="px-4 py-2 bg-gradient-to-r from-orange-600 to-red-600 text-white font-bold rounded-lg hover:from-orange-700 hover:to-red-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {isGeneratingPages ? 'Generating Pages...' : 'Generate Pages'}
+                            </button>
+                        )}
+
+                        {(hasNextChapter || hasNextArc) && (
+                            <button
+                                onClick={() => {
+                                    if (hasNextChapter) {
+                                        router.push(`/story/${storyId}/chapter/${arcIndex}/${chapterIndex + 1}`);
+                                    } else if (hasNextArc) {
+                                        router.push(`/story/${storyId}/chapter/${arcIndex + 1}/0`);
+                                    }
+                                }}
+                                className="px-4 py-2 bg-gradient-to-r from-cyan-600 to-teal-600 text-white font-bold rounded-lg hover:from-cyan-700 hover:to-teal-700 transition-all duration-300"
+                            >
+                                Next Chapter →
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>

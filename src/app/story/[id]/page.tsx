@@ -12,9 +12,19 @@ export default function StoryDisplayPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isGeneratingChapters, setIsGeneratingChapters] = useState(false);
+    const [activeSection, setActiveSection] = useState<'story' | 'objectives' | 'threads' | 'arcs'>('story');
+    const [arcsMenuOpen, setArcsMenuOpen] = useState(true);
     const router = useRouter();
     const params = useParams();
     const storyId = params.id as string;
+
+    const getThreadArcIntroduced = (thread: any) => {
+        return thread.arcIntroduced || (Array.isArray(thread.arcsIntroduced) ? thread.arcsIntroduced[0] : thread.arcsIntroduced) || 'Unknown';
+    };
+
+    const getThreadArcsResolved = (thread: any) => {
+        return thread.arcsResolved || (Array.isArray(thread.arcsResolved) ? thread.arcsResolved[0] : thread.arcsResolved) || 'Unknown';
+    };
 
     useEffect(() => {
         const loadStory = async () => {
@@ -45,8 +55,7 @@ export default function StoryDisplayPage() {
         setError(null);
 
         try {
-            const result = await completeStoryWithChapters(storyId);
-            // Reload the story to get the updated data with chapters
+            await completeStoryWithChapters(storyId);
             const updatedStoryWithDetails = await storyStore.getStoryWithDetails(storyId);
             setStory(updatedStoryWithDetails);
         } catch (error) {
@@ -57,12 +66,24 @@ export default function StoryDisplayPage() {
         }
     };
 
+    const hasMoreArcsToGenerate = story?.arcs.some(arc => !arc.chapters || arc.chapters.length === 0) || false;
+    const nextArcToGenerate = story?.arcs.findIndex(arc => !arc.chapters || arc.chapters.length === 0);
+    const nextArcNumber = nextArcToGenerate !== undefined && nextArcToGenerate !== -1 ? nextArcToGenerate + 1 : null;
+
+    const scrollToSection = (section: 'story' | 'objectives' | 'threads' | 'arcs') => {
+        setActiveSection(section);
+        const element = document.getElementById(section);
+        if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    };
+
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center p-4">
+            <div className="min-h-screen bg-white dark:bg-[#191919] flex items-center justify-center p-4">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-cyan-400 mx-auto mb-4"></div>
-                    <p className="text-gray-300 text-lg">Loading your story...</p>
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    <p className="text-gray-600 dark:text-gray-400">Loading your story...</p>
                 </div>
             </div>
         );
@@ -70,13 +91,13 @@ export default function StoryDisplayPage() {
 
     if (error || !story) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center p-4">
-                <div className="bg-red-900/50 backdrop-blur-sm rounded-xl p-8 max-w-md text-center">
-                    <h2 className="text-2xl font-bold text-red-400 mb-4">Error</h2>
-                    <p className="text-red-200 mb-6">{error}</p>
+            <div className="min-h-screen bg-white dark:bg-[#191919] flex items-center justify-center p-4">
+                <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-8 max-w-md text-center">
+                    <h2 className="text-2xl font-bold text-red-600 dark:text-red-400 mb-4">Error</h2>
+                    <p className="text-red-800 dark:text-red-300 mb-6">{error}</p>
                     <button
                         onClick={() => router.push('/')}
-                        className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-300"
+                        className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
                     >
                         Back to Home
                     </button>
@@ -86,332 +107,356 @@ export default function StoryDisplayPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 p-4">
-            <div className="max-w-6xl mx-auto">
-                {/* Header */}
-                <div className="text-center mb-8">
-                    <h1 className="text-4xl font-bold bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent mb-4">
+        <div className="min-h-screen bg-white dark:bg-[#191919]">
+            {/* Side Navigation */}
+            <aside className="fixed left-0 top-0 h-full w-64 bg-[#f7f7f5] dark:bg-[#252525] border-r border-gray-200 dark:border-gray-800 p-6 overflow-y-auto z-10">
+                <div className="mb-8">
+                    <button
+                        onClick={() => router.push('/')}
+                        className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors text-sm mb-6"
+                    >
+                        <span>←</span>
+                        <span>Back to Home</span>
+                    </button>
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-1">
                         {story.details.title}
-                    </h1>
-                    <p className="text-gray-300 text-lg">
-                        Your Isekai Story is Ready!
-                    </p>
+                    </h2>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Isekai Story</p>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-                    {/* Story Details */}
-                    <div className="bg-gradient-to-br from-purple-800/50 to-blue-800/50 backdrop-blur-sm rounded-xl p-6">
-                        <h2 className="text-2xl font-bold text-purple-300 mb-4">Story Details</h2>
+                <nav className="space-y-1">
+                    <button
+                        onClick={() => scrollToSection('story')}
+                        className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                            activeSection === 'story'
+                                ? 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
+                                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                        }`}
+                    >
+                        📖 Story Details
+                    </button>
+                    <button
+                        onClick={() => scrollToSection('objectives')}
+                        className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                            activeSection === 'objectives'
+                                ? 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
+                                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                        }`}
+                    >
+                        🎯 Objectives
+                    </button>
+                    <button
+                        onClick={() => scrollToSection('threads')}
+                        className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                            activeSection === 'threads'
+                                ? 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
+                                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                        }`}
+                    >
+                        🧵 Story Threads
+                    </button>
 
-                        <div className="space-y-3">
-                            <div>
-                                <span className="text-gray-400 font-semibold">Summary:</span>
-                                <p className="text-gray-300 mt-1">{story.details.summary}</p>
-                            </div>
+                    {/* Story Arcs with Submenu */}
+                    <div>
+                        <button
+                            onClick={() => {
+                                setArcsMenuOpen(!arcsMenuOpen);
+                                scrollToSection('arcs');
+                            }}
+                            className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center justify-between ${
+                                activeSection === 'arcs'
+                                    ? 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
+                                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                            }`}
+                        >
+                            <span>📚 Story Arcs</span>
+                            <span className={`transition-transform ${arcsMenuOpen ? 'rotate-90' : ''}`}>›</span>
+                        </button>
 
-                            <div>
-                                <span className="text-gray-400 font-semibold">Description:</span>
-                                <p className="text-gray-300 mt-1">{story.details.description}</p>
+                        {arcsMenuOpen && (
+                            <div className="ml-4 mt-1 space-y-1">
+                                {story.arcs.map((arc, index) => (
+                                    <button
+                                        key={arc.id}
+                                        onClick={() => {
+                                            const element = document.getElementById(`arc-${index}`);
+                                            if (element) {
+                                                element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                            }
+                                        }}
+                                        className="w-full text-left px-3 py-1.5 rounded-md text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex items-center gap-2"
+                                    >
+                                        <span className="text-gray-400">Arc {arc.order}</span>
+                                        <span className="truncate">{arc.title}</span>
+                                        {arc.chapters && arc.chapters.length > 0 && (
+                                            <span className="ml-auto text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded">
+                                                {arc.chapters.length}
+                                            </span>
+                                        )}
+                                    </button>
+                                ))}
                             </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <span className="text-gray-400 font-semibold">Influence:</span>
-                                    <p className="text-gray-300">{story.details.influence}</p>
-                                </div>
-                                <div>
-                                    <span className="text-gray-400 font-semibold">Total Arcs:</span>
-                                    <p className="text-gray-300">{story.details.totalArcs}</p>
-                                </div>
-                            </div>
-
-                            <div>
-                                <span className="text-gray-400 font-semibold">World Type:</span>
-                                <p className="text-gray-300">{story.details.newWorldType}</p>
-                            </div>
-
-                            <div>
-                                <span className="text-gray-400 font-semibold">Origin World:</span>
-                                <p className="text-gray-300">{story.details.originWorld}</p>
-                            </div>
-
-                            <div>
-                                <span className="text-gray-400 font-semibold">Genre Tags:</span>
-                                <div className="flex flex-wrap gap-2 mt-2">
-                                    {story.details.genreTags.map((tag, index) => (
-                                        <span key={index} className="bg-purple-600/50 px-2 py-1 rounded-lg text-sm text-purple-200">
-                                            {tag}
-                                        </span>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
+                        )}
                     </div>
+                </nav>
 
-                    {/* Main Character */}
-                    <div className="bg-gradient-to-br from-cyan-800/50 to-teal-800/50 backdrop-blur-sm rounded-xl p-6">
-                        <h2 className="text-2xl font-bold text-cyan-300 mb-4">Main Character</h2>
+                <div className="mt-8 space-y-2">
+                    {hasMoreArcsToGenerate && (
+                        <button
+                            onClick={handleGenerateChapters}
+                            disabled={isGeneratingChapters}
+                            className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {isGeneratingChapters
+                                ? `Generating Arc ${nextArcNumber}...`
+                                : `Generate Arc ${nextArcNumber}`
+                            }
+                        </button>
+                    )}
 
-                        <div className="space-y-3">
-                            <div>
-                                <span className="text-gray-400 font-semibold">Name:</span>
-                                <p className="text-gray-300">{story.details.mainCharacter.name}</p>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <span className="text-gray-400 font-semibold">Gender:</span>
-                                    <p className="text-gray-300">{story.details.mainCharacter.gender}</p>
-                                </div>
-                                <div>
-                                    <span className="text-gray-400 font-semibold">Species:</span>
-                                    <p className="text-gray-300">{story.details.mainCharacter.species}</p>
-                                </div>
-                            </div>
-
-                            <div>
-                                <span className="text-gray-400 font-semibold">Rebirth Type:</span>
-                                <p className="text-gray-300">{story.details.mainCharacter.rebirthType}</p>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <span className="text-gray-400 font-semibold">Previous Job:</span>
-                                    <p className="text-gray-300">{story.details.mainCharacter.previousOccupation}</p>
-                                </div>
-                                <div>
-                                    <span className="text-gray-400 font-semibold">New Role:</span>
-                                    <p className="text-gray-300">{story.details.mainCharacter.characterOccupation}</p>
-                                </div>
-                            </div>
-
-                            <div>
-                                <span className="text-gray-400 font-semibold">Overpowered:</span>
-                                <span className={`ml-2 px-2 py-1 rounded text-sm ${
-                                    story.details.mainCharacter.overpowered
-                                        ? 'bg-green-600/50 text-green-200'
-                                        : 'bg-gray-600/50 text-gray-300'
-                                }`}>
-                                    {story.details.mainCharacter.overpowered ? 'Yes' : 'No'}
-                                </span>
-                            </div>
+                    {!hasMoreArcsToGenerate && (
+                        <div className="w-full px-4 py-2 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 text-sm font-medium rounded-md text-center">
+                            ✓ All Arcs Complete
                         </div>
-                    </div>
+                    )}
                 </div>
+            </aside>
 
-                {/* Objectives */}
-                <div className="bg-gradient-to-br from-green-800/50 to-emerald-800/50 backdrop-blur-sm rounded-xl p-6 mb-8">
-                    <h2 className="text-2xl font-bold text-green-300 mb-6">Story Objectives</h2>
+            {/* Main Content */}
+            <main className="ml-64 p-12">
+                <div className="max-w-4xl mx-auto space-y-12">
+                    {/* Header */}
+                    <div>
+                        <h1 className="text-5xl font-bold text-gray-900 dark:text-gray-100 mb-4">
+                            {story.details.title}
+                        </h1>
+                        <p className="text-lg text-gray-600 dark:text-gray-400">
+                            {story.details.summary}
+                        </p>
+                    </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {story.objectives.map((objective, index) => (
-                            <div key={index} className="bg-black/30 rounded-lg p-4">
-                                <div className="flex items-center justify-between mb-3">
-                                    <h3 className="text-lg font-bold text-green-200">{objective.title}</h3>
+                    {/* Story Details Section */}
+                    <section id="story" className="scroll-mt-8">
+                        <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-6">📖 Story Details</h2>
+
+                        <div className="space-y-6">
+                            {/* Main Character */}
+                            <div className="bg-white dark:bg-[#252525] border border-gray-200 dark:border-gray-800 rounded-lg p-6">
+                                <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">Main Character</h3>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <p className="text-sm text-gray-500 dark:text-gray-400">Name</p>
+                                        <p className="text-gray-900 dark:text-gray-100">{story.details.mainCharacter.name}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-sm text-gray-500 dark:text-gray-400">Gender</p>
+                                        <p className="text-gray-900 dark:text-gray-100">{story.details.mainCharacter.gender}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-sm text-gray-500 dark:text-gray-400">Species</p>
+                                        <p className="text-gray-900 dark:text-gray-100">{story.details.mainCharacter.species}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-sm text-gray-500 dark:text-gray-400">Rebirth Type</p>
+                                        <p className="text-gray-900 dark:text-gray-100">{story.details.mainCharacter.rebirthType}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-sm text-gray-500 dark:text-gray-400">Previous Job</p>
+                                        <p className="text-gray-900 dark:text-gray-100">{story.details.mainCharacter.previousOccupation}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-sm text-gray-500 dark:text-gray-400">New Role</p>
+                                        <p className="text-gray-900 dark:text-gray-100">{story.details.mainCharacter.characterOccupation}</p>
+                                    </div>
+                                </div>
+                                <div className="mt-4 flex items-center gap-2">
+                                    <span className="text-sm text-gray-500 dark:text-gray-400">Overpowered:</span>
                                     <span className={`px-2 py-1 rounded text-sm ${
-                                        objective.type === 'main'
-                                            ? 'bg-yellow-600/50 text-yellow-200'
-                                            : 'bg-gray-600/50 text-gray-300'
+                                        story.details.mainCharacter.overpowered
+                                            ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
+                                            : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
                                     }`}>
-                                        {objective.type}
+                                        {story.details.mainCharacter.overpowered ? 'Yes' : 'No'}
                                     </span>
                                 </div>
+                            </div>
 
-                                <div className="space-y-2">
+                            {/* Story Info */}
+                            <div className="bg-white dark:bg-[#252525] border border-gray-200 dark:border-gray-800 rounded-lg p-6">
+                                <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">Story Information</h3>
+                                <div className="space-y-4">
                                     <div>
-                                        <span className="text-gray-400 font-semibold text-sm">Description:</span>
-                                        <p className="text-gray-300 text-sm">{objective.description}</p>
+                                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Description</p>
+                                        <p className="text-gray-900 dark:text-gray-100">{story.details.description}</p>
                                     </div>
-
+                                    <div className="grid grid-cols-3 gap-4">
+                                        <div>
+                                            <p className="text-sm text-gray-500 dark:text-gray-400">Influence</p>
+                                            <p className="text-gray-900 dark:text-gray-100">{story.details.influence}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-sm text-gray-500 dark:text-gray-400">Total Arcs</p>
+                                            <p className="text-gray-900 dark:text-gray-100">{story.details.totalArcs}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-sm text-gray-500 dark:text-gray-400">World Type</p>
+                                            <p className="text-gray-900 dark:text-gray-100">{story.details.newWorldType}</p>
+                                        </div>
+                                    </div>
                                     <div>
-                                        <span className="text-gray-400 font-semibold text-sm">Related Arcs:</span>
-                                        <div className="flex flex-wrap gap-1 mt-1">
-                                            {objective.relatedArcs.map((arcTitle, arcIndex) => (
-                                                <span key={arcIndex} className="bg-green-600/50 px-2 py-1 rounded text-xs text-green-200">
-                                                    {arcTitle}
+                                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">Genre Tags</p>
+                                        <div className="flex flex-wrap gap-2">
+                                            {story.details.genreTags.map((tag, index) => (
+                                                <span key={index} className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded text-sm">
+                                                    {tag}
                                                 </span>
                                             ))}
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Story Threads */}
-                <div className="bg-gradient-to-br from-purple-800/50 to-indigo-800/50 backdrop-blur-sm rounded-xl p-6 mb-8">
-                    <h2 className="text-2xl font-bold text-purple-300 mb-6">Story Threads</h2>
-
-                    <div className="grid grid-cols-1 gap-6">
-                        {/* Major Threads */}
-                        <div>
-                            <h3 className="text-lg font-bold text-purple-200 mb-4">Major Threads</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {story.threads.filter(thread => thread.importance === 'major').map((thread, index) => (
-                                    <div key={index} className="bg-black/30 rounded-lg p-4">
-                                        <div className="flex items-center justify-between mb-3">
-                                            <h4 className="text-md font-bold text-purple-100">{thread.title}</h4>
-                                            <span className="px-2 py-1 rounded text-xs bg-purple-600/50 text-purple-200">
-                                                {thread.status}
-                                            </span>
-                                        </div>
-
-                                        <div className="space-y-2">
-                                            <div>
-                                                <span className="text-gray-400 font-semibold text-sm">Summary:</span>
-                                                <p className="text-gray-300 text-sm">{thread.summary}</p>
-                                            </div>
-
-                                            <div>
-                                                <span className="text-gray-400 font-semibold text-sm">Introduced:</span>
-                                                <div className="flex flex-wrap gap-1 mt-1">
-                                                    <span className="bg-blue-600/50 px-2 py-1 rounded text-xs text-blue-200">
-                                                        {thread.arcIntroduced}
-                                                    </span>
-                                                </div>
-                                            </div>
-
-                                            <div>
-                                                <span className="text-gray-400 font-semibold text-sm">Resolved:</span>
-                                                <div className="flex flex-wrap gap-1 mt-1">
-                                                    <span className="bg-green-600/50 px-2 py-1 rounded text-xs text-green-200">
-                                                        {thread.arcsResolved}
-                                                    </span>
-                                                </div>
-                                            </div>
-
-                                            {thread.relatedObjectives.length > 0 && (
-                                                <div>
-                                                    <span className="text-gray-400 font-semibold text-sm">Related Objectives:</span>
-                                                    <div className="flex flex-wrap gap-1 mt-1">
-                                                        {thread.relatedObjectives.map((objTitle, objIndex) => (
-                                                            <span key={objIndex} className="bg-yellow-600/50 px-2 py-1 rounded text-xs text-yellow-200">
-                                                                {objTitle}
-                                                            </span>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
                         </div>
+                    </section>
 
-                        {/* Minor Threads */}
-                        <div>
-                            <h3 className="text-lg font-bold text-purple-200 mb-4">Minor Threads</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                {story.threads.filter(thread => thread.importance === 'minor').map((thread, index) => (
-                                    <div key={index} className="bg-black/30 rounded-lg p-4">
-                                        <div className="flex items-center justify-between mb-3">
-                                            <h4 className="text-md font-bold text-purple-100">{thread.title}</h4>
-                                            <span className="px-2 py-1 rounded text-xs bg-gray-600/50 text-gray-300">
-                                                {thread.status}
-                                            </span>
-                                        </div>
-
-                                        <div className="space-y-2">
-                                            <div>
-                                                <span className="text-gray-400 font-semibold text-sm">Summary:</span>
-                                                <p className="text-gray-300 text-sm">{thread.summary}</p>
-                                            </div>
-
-                                            <div>
-                                                <span className="text-gray-400 font-semibold text-sm">Arcs:</span>
-                                                <div className="flex flex-wrap gap-1 mt-1">
-                                                    <span className="bg-blue-600/50 px-2 py-1 rounded text-xs text-blue-200">
-                                                        Intro: {thread.arcIntroduced}
-                                                    </span>
-                                                    <span className="bg-green-600/50 px-2 py-1 rounded text-xs text-green-200">
-                                                        Resolved: {thread.arcsResolved}
-                                                    </span>
-                                                </div>
-                                            </div>
-
-                                            {thread.relatedObjectives.length > 0 && (
-                                                <div>
-                                                    <span className="text-gray-400 font-semibold text-sm">Objectives:</span>
-                                                    <div className="flex flex-wrap gap-1 mt-1">
-                                                        {thread.relatedObjectives.map((objTitle, objIndex) => (
-                                                            <span key={objIndex} className="bg-yellow-600/50 px-2 py-1 rounded text-xs text-yellow-200">
-                                                                {objTitle}
-                                                            </span>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
+                    {/* Objectives Section */}
+                    <section id="objectives" className="scroll-mt-8">
+                        <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-6">🎯 Story Objectives</h2>
+                        <div className="space-y-4">
+                            {story.objectives.map((objective, index) => (
+                                <div key={index} className="bg-white dark:bg-[#252525] border border-gray-200 dark:border-gray-800 rounded-lg p-6">
+                                    <div className="flex items-start justify-between mb-3">
+                                        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{objective.title}</h3>
+                                        <span className={`px-2 py-1 rounded text-xs font-medium ${
+                                            objective.type === 'main'
+                                                ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300'
+                                                : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+                                        }`}>
+                                            {objective.type}
+                                        </span>
                                     </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Story Arcs */}
-                <div className="bg-gradient-to-br from-pink-800/50 to-orange-800/50 backdrop-blur-sm rounded-xl p-6 mb-8">
-                    <h2 className="text-2xl font-bold text-pink-300 mb-6">Story Arcs</h2>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {story.arcs.map((arc, index) => (
-                            <div key={arc.id} className="bg-black/30 rounded-lg p-4">
-                                <div className="flex items-center justify-between mb-3">
-                                    <h3 className="text-lg font-bold text-pink-200">Arc {arc.order}: {arc.title}</h3>
+                                    <p className="text-gray-600 dark:text-gray-400 mb-3">{objective.description}</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {objective.relatedArcs.map((arcTitle, arcIndex) => (
+                                            <span key={arcIndex} className="px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded text-xs">
+                                                {arcTitle}
+                                            </span>
+                                        ))}
+                                    </div>
                                 </div>
+                            ))}
+                        </div>
+                    </section>
 
-                                <div className="space-y-2">
-                                    <div>
-                                        <span className="text-gray-400 font-semibold text-sm">Theme:</span>
-                                        <p className="text-gray-300 text-sm">{arc.theme}</p>
+                    {/* Story Threads Section */}
+                    <section id="threads" className="scroll-mt-8">
+                        <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-6">🧵 Story Threads</h2>
+
+                        <div className="space-y-6">
+                            <div>
+                                <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">Major Threads</h3>
+                                <div className="space-y-4">
+                                    {story.threads.filter(thread => thread.importance === 'major').map((thread, index) => (
+                                        <div key={index} className="bg-white dark:bg-[#252525] border border-gray-200 dark:border-gray-800 rounded-lg p-6">
+                                            <div className="flex items-start justify-between mb-3">
+                                                <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{thread.title}</h4>
+                                                <span className="px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded text-xs font-medium">
+                                                    {thread.status}
+                                                </span>
+                                            </div>
+                                            <p className="text-gray-600 dark:text-gray-400 mb-3">{thread.summary}</p>
+                                            <div className="flex gap-4 text-sm">
+                                                <div>
+                                                    <span className="text-gray-500 dark:text-gray-400">Introduced: </span>
+                                                    <span className="text-gray-900 dark:text-gray-100">{getThreadArcIntroduced(thread)}</span>
+                                                </div>
+                                                <div>
+                                                    <span className="text-gray-500 dark:text-gray-400">Resolved: </span>
+                                                    <span className="text-gray-900 dark:text-gray-100">{getThreadArcsResolved(thread)}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div>
+                                <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">Minor Threads</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {story.threads.filter(thread => thread.importance === 'minor').map((thread, index) => (
+                                        <div key={index} className="bg-white dark:bg-[#252525] border border-gray-200 dark:border-gray-800 rounded-lg p-4">
+                                            <div className="flex items-start justify-between mb-2">
+                                                <h4 className="font-semibold text-gray-900 dark:text-gray-100">{thread.title}</h4>
+                                                <span className="px-2 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded text-xs">
+                                                    {thread.status}
+                                                </span>
+                                            </div>
+                                            <p className="text-sm text-gray-600 dark:text-gray-400">{thread.summary}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* Story Arcs Section */}
+                    <section id="arcs" className="scroll-mt-8 pb-12">
+                        <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-6">📚 Story Arcs</h2>
+                        <div className="space-y-6">
+                            {story.arcs.map((arc, index) => (
+                                <div key={arc.id} id={`arc-${index}`} className="bg-white dark:bg-[#252525] border border-gray-200 dark:border-gray-800 rounded-lg p-6 scroll-mt-8">
+                                    <h3 className="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                                        Arc {arc.order}: {arc.title}
+                                    </h3>
+
+                                    <div className="space-y-3 mb-6">
+                                        <div>
+                                            <p className="text-sm text-gray-500 dark:text-gray-400">Theme</p>
+                                            <p className="text-gray-900 dark:text-gray-100">{arc.theme}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-sm text-gray-500 dark:text-gray-400">Goal</p>
+                                            <p className="text-gray-900 dark:text-gray-100">{arc.goal}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-sm text-gray-500 dark:text-gray-400">Key Twist</p>
+                                            <p className="text-gray-900 dark:text-gray-100">{arc.keyTwist}</p>
+                                        </div>
                                     </div>
 
-                                    <div>
-                                        <span className="text-gray-400 font-semibold text-sm">Goal:</span>
-                                        <p className="text-gray-300 text-sm">{arc.goal}</p>
-                                    </div>
-
-                                    <div>
-                                        <span className="text-gray-400 font-semibold text-sm">Key Twist:</span>
-                                        <p className="text-gray-300 text-sm">{arc.keyTwist}</p>
-                                    </div>
-
-                                    <div>
-                                        <span className="text-gray-400 font-semibold text-sm">Ending:</span>
-                                        <p className="text-gray-300 text-sm">{arc.endingHint}</p>
-                                    </div>
-
-                                    {/* Chapters */}
                                     {arc.chapters && arc.chapters.length > 0 && (
-                                        <div className="mt-4 pt-4 border-t border-gray-600">
-                                            <span className="text-gray-400 font-semibold text-sm">Chapters ({arc.chapters.length}):</span>
-                                            <div className="mt-2 space-y-2">
+                                        <div className="border-t border-gray-200 dark:border-gray-800 pt-6">
+                                            <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                                                Chapters ({arc.chapters.length})
+                                            </h4>
+                                            <div className="space-y-3">
                                                 {arc.chapters.map((chapter, chapterIndex) => (
-                                                    <div key={chapterIndex} className="bg-black/20 rounded p-3 hover:bg-black/30 transition-colors cursor-pointer"
-                                                         onClick={() => router.push(`/story/${storyId}/chapter/${index}/${chapterIndex}`)}>
-                                                        <div className="flex items-center justify-between mb-2">
-                                                            <h5 className="text-sm font-bold text-pink-100 hover:text-pink-50">
-                                                                Ch. {chapterIndex + 1}: {chapter.chapterTitle}
+                                                    <div
+                                                        key={chapterIndex}
+                                                        onClick={() => router.push(`/story/${storyId}/chapter/${index}/${chapterIndex}`)}
+                                                        className="p-4 bg-gray-50 dark:bg-[#1e1e1e] rounded-lg hover:bg-gray-100 dark:hover:bg-[#2a2a2a] cursor-pointer transition-colors border border-gray-200 dark:border-gray-800"
+                                                    >
+                                                        <div className="flex items-start justify-between mb-2">
+                                                            <h5 className="font-semibold text-gray-900 dark:text-gray-100">
+                                                                Chapter {chapterIndex + 1}: {chapter.chapterTitle}
                                                             </h5>
-                                                            <span className={`px-2 py-1 rounded text-xs ${
-                                                                chapter.outcomeType === 'victory' ? 'bg-green-600/50 text-green-200' :
-                                                                chapter.outcomeType === 'progress' ? 'bg-blue-600/50 text-blue-200' :
-                                                                chapter.outcomeType === 'setback' ? 'bg-red-600/50 text-red-200' :
-                                                                'bg-purple-600/50 text-purple-200'
+                                                            <span className={`px-2 py-1 rounded text-xs font-medium ${
+                                                                chapter.outcomeType === 'victory' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' :
+                                                                chapter.outcomeType === 'progress' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' :
+                                                                chapter.outcomeType === 'setback' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' :
+                                                                'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
                                                             }`}>
                                                                 {chapter.sceneType}
                                                             </span>
                                                         </div>
-                                                        <p className="text-gray-300 text-xs mb-2">{chapter.summary}</p>
-                                                        <div className="grid grid-cols-2 gap-2 text-xs">
+                                                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{chapter.summary}</p>
+                                                        <div className="grid grid-cols-2 gap-3 text-sm">
                                                             <div>
-                                                                <span className="text-gray-400 font-semibold">Challenge:</span>
-                                                                <p className="text-gray-300">{chapter.challenge}</p>
+                                                                <p className="text-gray-500 dark:text-gray-400 text-xs mb-1">Challenge</p>
+                                                                <p className="text-gray-900 dark:text-gray-100">{chapter.challenge}</p>
                                                             </div>
                                                             <div>
-                                                                <span className="text-gray-400 font-semibold">Resolution:</span>
-                                                                <p className="text-gray-300">{chapter.resolution}</p>
+                                                                <p className="text-gray-500 dark:text-gray-400 text-xs mb-1">Resolution</p>
+                                                                <p className="text-gray-900 dark:text-gray-100">{chapter.resolution}</p>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -420,29 +465,11 @@ export default function StoryDisplayPage() {
                                         </div>
                                     )}
                                 </div>
-                            </div>
-                        ))}
-                    </div>
+                            ))}
+                        </div>
+                    </section>
                 </div>
-
-                {/* Action Buttons */}
-                <div className="flex justify-center gap-4">
-                    <button
-                        onClick={() => router.push('/')}
-                        className="px-6 py-3 bg-gray-600 text-white font-bold rounded-lg hover:bg-gray-700 transition-all duration-300"
-                    >
-                        Create New Story
-                    </button>
-
-                    <button
-                        onClick={handleGenerateChapters}
-                        disabled={isGeneratingChapters}
-                        className="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-bold rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-                    >
-                        {isGeneratingChapters ? 'Generating Chapters...' : 'Generate Chapters'}
-                    </button>
-                </div>
-            </div>
+            </main>
         </div>
     );
 }

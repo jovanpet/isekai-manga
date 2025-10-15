@@ -3,24 +3,18 @@ import { Arc } from "@/types";
 export function buildObjectivesPrompt(arcs: Arc[]) {
     const arcCount = arcs.length;
     const arcsJSON = JSON.stringify(arcs, null, 2);
-    const numberOfMajorObjectives = Math.ceil(arcCount * 0.3);
-    const numberOfMinorObjectives = Math.ceil(arcCount * 0.7);
+    const numberOfMajorObjectives = Math.floor(arcCount * 0.3);
+    const numberOfMinorObjectives = Math.floor(arcCount * 0.7);
 
     return `
 You are a professional story planner designing narrative milestones
 for a serialized Isekai manga.
 
-Below is the current series outline with ${arcCount} arcs:
-
-${arcsJSON}
-
 TASK:
-Create ${numberOfMajorObjectives} major and ${numberOfMinorObjectives} minor clear OBJECTIVES (major milestones) that the protagonist
-must complete before achieving their final goal.
+Create max ${numberOfMajorObjectives} major and ${numberOfMinorObjectives} minor clear OBJECTIVES that the protagonist
+must complete before achieving their final goal. The objectives should be very specific and include details about specificity
 
-for a serialized Isekai manga.
-
-Below is the current series outline with ${arcCount} arcs:
+Below is the current series outline with arcs:
 
 ${arcsJSON}
 
@@ -36,10 +30,6 @@ ${arcsJSON}
 - Provide side quests, training arcs, relationship growth, or world exploration.
 - Support or foreshadow Major Arcs.
 - May resolve minor threads or optional objectives.
-
-TASK:
-Create ${numberOfMajorObjectives} major and ${numberOfMinorObjectives} minor clear OBJECTIVES that the protagonist
-must complete before achieving their final goal. The objectives should be very specific and include details about specificity
 
 Guidelines:
 - Each objective should map to one or more arcs.

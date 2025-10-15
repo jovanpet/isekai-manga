@@ -153,4 +153,35 @@ export const storyStore = {
             throw error;
         }
     },
+
+    async getAllStoriesWithDetails(): Promise<(Story & { details: StoryDetails })[]> {
+        try {
+            const stories = await this.getAllStories();
+
+            // Fetch details for all stories in parallel
+            const storiesWithDetails = await Promise.all(
+                stories.map(async (story) => {
+                    const detailsRef = doc(db, 'story_details', story.storyDetailsId);
+                    const detailsSnap = await getDoc(detailsRef);
+
+                    if (detailsSnap.exists()) {
+                        return {
+                            ...story,
+                            details: {
+                                id: detailsSnap.id,
+                                ...detailsSnap.data(),
+                            } as StoryDetails
+                        };
+                    }
+                    return null;
+                })
+            );
+
+            // Filter out any null values
+            return storiesWithDetails.filter((story): story is Story & { details: StoryDetails } => story !== null);
+        } catch (error) {
+            console.error('Error getting all stories with details:', error);
+            throw error;
+        }
+    },
 };

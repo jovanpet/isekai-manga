@@ -19,7 +19,8 @@ The user wants a ${story.totalArcs} story.
 Create a complete outline that fits this scope.
 Each arc should move the protagonist toward their ultimate goal (${story.plot?.goal}).
 
-Return JSON only:
+Return ONLY valid JSON in this exact format (no additional text or explanations):
+
 {
   "arcs": [
     {
@@ -32,5 +33,11 @@ Return JSON only:
     }
   ]
 }
+
+IMPORTANT:
+- All string values must be properly quoted
+- No trailing commas
+- No comments in the JSON
+- Return only the JSON object, nothing else
 `;
 }

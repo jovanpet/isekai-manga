@@ -19,6 +19,7 @@ export function buildChaptersPrompt(story: Story, arcIndex: number) {
         obj.relatedArcs.includes(currentArcTitle) && obj.status !== 'completed'
     );
 
+
     return `
 You are a professional light-novel writer structuring a serialized Isekai manga.
 
@@ -60,10 +61,10 @@ Each chapter includes:
    - challenge
    - resolution
    - outcomeType ("progress", "setback", "twist", or "victory")
-3. After all chapters, output a single array called **importantCharacters** listing everyone significant across the entire arc.
+3. After all chapters, output a single array called **importantCharacters** listing everyone significant across the entire arc, monsters that appear should be considered characters.
    - include: name, gender ("male", "female", "other"), species ("human", "elf", "demon", "beastkin", "spirit", "god", "undead", "android", "fairy", "dragonkin"), role ("protagonist", "companion", "mentor", "rival", "villain", "support"), appearanceHint, role(villain, mentor, companion, support, etc)
 4. After this include updates on characters if they are active or not anymore in the whole story, and if their role has changed for instance from companion to rival.
-5. Return valid JSON ONLY with this format:
+5. Return ONLY valid, clean JSON. DO NOT include markdown formatting, code blocks, or any wrapper text. Start directly with { and end with }. Format:
 
 {
   "chapters": [ 
@@ -71,6 +72,7 @@ Each chapter includes:
       "chapterTitle": "string",
       "sceneType": "string",
       "summary": "string",
+      "detailed_description": "string",
       "challenge": "string",
       "resolution": "string",
       "outcomeType": "progress | setback | twist | victory",

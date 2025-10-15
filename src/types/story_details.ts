@@ -23,7 +23,8 @@ export interface StoryDetails {
     status: statics.StoryStatus;
     createdAt: string;
     updatedAt: string;
-    userId?: string;
+    userId: string;
+    storyId?: string;
     mainCharacter: Character;
 }
 

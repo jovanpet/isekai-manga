@@ -5,8 +5,9 @@ import { useRouter } from 'next/navigation';
 import { generateStorylines, StorylineOption } from '@/generation/services/storylineService';
 import { createStoryFromStoryline } from '@/generation/services/storyCreationService';
 import StorylineCard from '@/components/StorylineCard';
+import ProtectedRoute from '@/components/ProtectedRoute';
 
-export default function GenerateStorylinesPage() {
+function GenerateStorylinesContent() {
     const [storylines, setStorylines] = useState<StorylineOption[]>([]);
     const [selectedStoryline, setSelectedStoryline] = useState<StorylineOption | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -18,7 +19,6 @@ export default function GenerateStorylinesPage() {
     useEffect(() => {
         const loadDataAndGenerateStorylines = async () => {
             try {
-                // Load data from localStorage
                 const tempStoryData = localStorage.getItem('tempStoryData');
 
                 if (!tempStoryData) {
@@ -30,7 +30,6 @@ export default function GenerateStorylinesPage() {
                 const parsedStoryData = JSON.parse(tempStoryData);
                 setStoryData(parsedStoryData);
 
-                // Generate storylines using Gemini
                 const generatedStorylines = await generateStorylines(parsedStoryData);
                 setStorylines(generatedStorylines);
             } catch (error) {
@@ -54,16 +53,12 @@ export default function GenerateStorylinesPage() {
         setIsSaving(true);
 
         try {
-            // Create story using the dedicated service
             const { storyId } = await createStoryFromStoryline({
                 storyData,
                 selectedStoryline
             });
 
-            // Clean up localStorage
             localStorage.removeItem('tempStoryData');
-
-            // Navigate to the story display page
             router.push(`/story/${storyId}`);
         } catch (error) {
             console.error('Error saving story:', error);
@@ -97,13 +92,13 @@ export default function GenerateStorylinesPage() {
 
     if (error) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center p-4">
-                <div className="bg-red-900/50 backdrop-blur-sm rounded-xl p-8 max-w-md text-center">
-                    <h2 className="text-2xl font-bold text-red-400 mb-4">Error</h2>
-                    <p className="text-red-200 mb-6">{error}</p>
+            <div className="min-h-screen bg-white dark:bg-[#191919] flex items-center justify-center p-4">
+                <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-8 max-w-md text-center">
+                    <h2 className="text-2xl font-bold text-red-600 dark:text-red-400 mb-4">Error</h2>
+                    <p className="text-red-800 dark:text-red-300 mb-6">{error}</p>
                     <button
                         onClick={handleBackToForm}
-                        className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-300"
+                        className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
                     >
                         Back to Form
                     </button>
@@ -113,14 +108,14 @@ export default function GenerateStorylinesPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 p-4">
-            <div className="max-w-6xl mx-auto">
+        <div className="min-h-screen bg-white dark:bg-[#191919]">
+            <div className="max-w-6xl mx-auto p-12">
                 {/* Header */}
-                <div className="text-center mb-8">
-                    <h1 className="text-4xl font-bold bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent mb-4">
+                <div className="mb-12">
+                    <h1 className="text-5xl font-bold text-gray-900 dark:text-gray-100 mb-4">
                         Choose Your Storyline
                     </h1>
-                    <p className="text-gray-300 text-lg">
+                    <p className="text-lg text-gray-600 dark:text-gray-400">
                         Select a storyline that resonates with your vision
                     </p>
                 </div>
@@ -129,9 +124,9 @@ export default function GenerateStorylinesPage() {
                 {isLoading && (
                     <div className="flex items-center justify-center py-20">
                         <div className="text-center">
-                            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-cyan-400 mx-auto mb-4"></div>
-                            <p className="text-gray-300 text-lg">Generating storylines with AI...</p>
-                            <p className="text-gray-400 text-sm mt-2">This may take a few moments</p>
+                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                            <p className="text-gray-900 dark:text-gray-100 text-lg font-medium">Generating storylines with AI...</p>
+                            <p className="text-gray-600 dark:text-gray-400 text-sm mt-2">This may take a few moments</p>
                         </div>
                     </div>
                 )}
@@ -140,9 +135,9 @@ export default function GenerateStorylinesPage() {
                 {isSaving && (
                     <div className="flex items-center justify-center py-20">
                         <div className="text-center">
-                            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-green-400 mx-auto mb-4"></div>
-                            <p className="text-gray-300 text-lg">Creating story...</p>
-                            <p className="text-gray-400 text-sm mt-2">Generating arcs, objectives, threads, and saving your story</p>
+                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+                            <p className="text-gray-900 dark:text-gray-100 text-lg font-medium">Creating your story...</p>
+                            <p className="text-gray-600 dark:text-gray-400 text-sm mt-2">Generating arcs, objectives, threads, and saving your story</p>
                         </div>
                     </div>
                 )}
@@ -168,14 +163,14 @@ export default function GenerateStorylinesPage() {
                     <div className="flex justify-center gap-4 mt-8">
                         <button
                             onClick={handleBackToForm}
-                            className="px-6 py-3 bg-gray-600 text-white font-bold rounded-lg hover:bg-gray-700 transition-all duration-300"
+                            className="px-6 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
                         >
                             Back to Form
                         </button>
 
                         <button
                             onClick={handleRegenerateStorylines}
-                            className="px-6 py-3 bg-gradient-to-r from-orange-600 to-red-600 text-white font-bold rounded-lg hover:from-orange-700 hover:to-red-700 transition-all duration-300"
+                            className="px-6 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-md transition-colors"
                         >
                             Regenerate Storylines
                         </button>
@@ -183,7 +178,7 @@ export default function GenerateStorylinesPage() {
                         <button
                             onClick={handleUseStoryline}
                             disabled={!selectedStoryline}
-                            className="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-bold rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                            className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             Use Selected Storyline
                         </button>
@@ -191,5 +186,13 @@ export default function GenerateStorylinesPage() {
                 )}
             </div>
         </div>
+    );
+}
+
+export default function GenerateStorylinesPage() {
+    return (
+        <ProtectedRoute>
+            <GenerateStorylinesContent />
+        </ProtectedRoute>
     );
 }

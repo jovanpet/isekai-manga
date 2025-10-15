@@ -22,11 +22,12 @@ import { Character } from '@/types/character';
 const COLLECTION_NAME = 'stories';
 
 export const storyStore = {
-    async createStory(storyDetails: StoryDetails, arcs: Arc[] = [], objectives: Objective[] = [], threads: Thread[] = [], characters: Character[] = []): Promise<string> {
+    async createStory(storyDetails: StoryDetails, arcs: Arc[] = [], objectives: Objective[] = [], threads: Thread[] = [], characters: Character[] = [], userId: string): Promise<string> {
         try {
-            // First save the StoryDetails to get an ID
+            // First save the StoryDetails with userId
             const storyDetailsRef = await addDoc(collection(db, 'story_details'), {
                 ...storyDetails,
+                userId: userId,
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
             });
@@ -37,12 +38,19 @@ export const storyStore = {
                 objectives,
                 threads,
                 characters,
-                storyDetailsId: storyDetailsRef.id
+                storyDetailsId: storyDetailsRef.id,
+                userId: userId
             };
 
             const docRef = await addDoc(collection(db, COLLECTION_NAME), {
                 ...storyData,
                 createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+            });
+
+            // Update story_details with the storyId reference
+            await updateDoc(doc(db, 'story_details', storyDetailsRef.id), {
+                storyId: docRef.id,
                 updatedAt: serverTimestamp(),
             });
 
@@ -181,6 +189,37 @@ export const storyStore = {
             return storiesWithDetails.filter((story): story is Story & { details: StoryDetails } => story !== null);
         } catch (error) {
             console.error('Error getting all stories with details:', error);
+            throw error;
+        }
+    },
+
+    async getStoriesWithDetailsByUser(userId: string): Promise<(Story & { details: StoryDetails })[]> {
+        try {
+            const stories = await this.getStoriesByUser(userId);
+
+            // Fetch details for all stories in parallel
+            const storiesWithDetails = await Promise.all(
+                stories.map(async (story) => {
+                    const detailsRef = doc(db, 'story_details', story.storyDetailsId);
+                    const detailsSnap = await getDoc(detailsRef);
+
+                    if (detailsSnap.exists()) {
+                        return {
+                            ...story,
+                            details: {
+                                id: detailsSnap.id,
+                                ...detailsSnap.data(),
+                            } as StoryDetails
+                        };
+                    }
+                    return null;
+                })
+            );
+
+            // Filter out any null values
+            return storiesWithDetails.filter((story): story is Story & { details: StoryDetails } => story !== null);
+        } catch (error) {
+            console.error('Error getting user stories with details:', error);
             throw error;
         }
     },

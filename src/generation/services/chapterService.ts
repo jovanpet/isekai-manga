@@ -7,6 +7,7 @@ import { Story } from '@/types/story/story';
 import { Chapter } from '@/types/story/arc';
 import { Character } from '@/types/character';
 import { Gender, Species, CharacterRole } from '@/types/statics';
+import { getUserApiKey } from '../../lib/userSettings';
 
 export interface ChapterGenerationResponse {
     chapters: Chapter[];
@@ -31,8 +32,13 @@ export interface CharacterGenerationResult {
 
 export async function generateChaptersForArc(story: Story, arcIndex: number): Promise<ChapterGenerationResponse> {
     try {
+        const userApiKey = await getUserApiKey();
+        if (!userApiKey) {
+            throw new Error('Please add your Gemini API key in Settings before generating chapters.');
+        }
+
         const prompt = buildChaptersPrompt(story, arcIndex);
-        const response = await runGemini(prompt);
+        const response = await runGemini(prompt, userApiKey);
 
         // Parse the response using safe JSON parser
         const chapterData = safeJsonParse<ChapterGenerationResponse>(response, 'chapter generation');
@@ -40,6 +46,9 @@ export async function generateChaptersForArc(story: Story, arcIndex: number): Pr
         return chapterData;
     } catch (error) {
         console.error('Error generating chapters:', error);
+        if (error instanceof Error && error.message.includes('API key')) {
+            throw error;
+        }
         throw new Error('Failed to generate chapters');
     }
 }
@@ -91,8 +100,12 @@ export async function processCharacters(
 
             // Generate detailed character data using buildCharacterTypePrompt
             try {
+                const userApiKey = await getUserApiKey();
+                if (!userApiKey) {
+                    throw new Error('Please add your Gemini API key in Settings before generating series outline.');
+                }
                 const charGenPrompt = buildCharacterTypePrompt(basicCharacter as Character);
-                const charResponse = await runGemini(charGenPrompt);
+                const charResponse = await runGemini(charGenPrompt, userApiKey);
                 // Parse as array since the prompt returns an array
                 const charData = safeJsonParse<any>(charResponse, 'character generation');
                 const generatedData = Array.isArray(charData) ? charData[0] : charData;

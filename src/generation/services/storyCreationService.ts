@@ -60,7 +60,8 @@ export async function createStoryFromStoryline({
             arcs,
             objectives,
             threads,
-            [updatedStoryData.mainCharacter] // characters
+            [updatedStoryData.mainCharacter],
+            updatedStoryData.userId
         );
 
         return {

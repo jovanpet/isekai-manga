@@ -11,4 +11,5 @@ export interface Story {
     threads: Thread[];
     characters: Character[];
     storyDetailsId: string;
+    userId: string
 }

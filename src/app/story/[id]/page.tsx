@@ -6,8 +6,9 @@ import { storyStore } from '@/store';
 import { completeStoryWithChapters } from '@/generation/services/storyCompletionService';
 import { Story } from '@/types/story/story';
 import { StoryDetails } from '@/types/story_details';
+import ProtectedRoute from '@/components/ProtectedRoute';
 
-export default function StoryDisplayPage() {
+function StoryDisplayContent() {
     const [story, setStory] = useState<Story & { details: StoryDetails } | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -471,5 +472,13 @@ export default function StoryDisplayPage() {
                 </div>
             </main>
         </div>
+    );
+}
+
+export default function StoryDisplayPage() {
+    return (
+        <ProtectedRoute>
+            <StoryDisplayContent />
+        </ProtectedRoute>
     );
 }

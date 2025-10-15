@@ -6,6 +6,7 @@ import { storyStore } from '@/store';
 import { Story } from '@/types/story/story';
 import { StoryDetails } from '@/types/story_details';
 import { CharacterRole } from '@/types';
+import { useAuth } from '@/contexts/AuthContext';
 import {
     randomStoryPreset,
     randomCharacterPreset,
@@ -37,14 +38,20 @@ import {
 
 export default function CreateStoryPage() {
     const router = useRouter();
+    const { user, signOut } = useAuth();
     const [existingStories, setExistingStories] = useState<(Story & { details: StoryDetails })[]>([]);
     const [isLoadingStories, setIsLoadingStories] = useState(true);
 
     // Load existing stories
     useEffect(() => {
         const loadStories = async () => {
+            if (!user) {
+                setIsLoadingStories(false);
+                return;
+            }
+
             try {
-                const stories = await storyStore.getAllStoriesWithDetails();
+                const stories = await storyStore.getStoriesWithDetailsByUser(user.uid);
                 setExistingStories(stories);
             } catch (error) {
                 console.error('Error loading stories:', error);
@@ -53,7 +60,7 @@ export default function CreateStoryPage() {
             }
         };
         loadStories();
-    }, []);
+    }, [user]);
 
     // Story state
     const [storyData, setStoryData] = useState({
@@ -185,18 +192,33 @@ export default function CreateStoryPage() {
             return;
         }
 
+        if (!user) {
+            alert('You must be signed in to create a story');
+            return;
+        }
+
         // Calculate totalArcs based on selected arcLength
         const totalArcs = calculateTotalArcs(storyData.arcLength);
         const storyDataWithArcs = {
             ...storyData,
             totalArcs,
-            mainCharacter: characterData
+            mainCharacter: characterData,
+            userId: user.uid
         };
 
         // Pass the story data with embedded character through localStorage
         localStorage.setItem('tempStoryData', JSON.stringify(storyDataWithArcs));
 
         router.push('/generate-storylines');
+    };
+
+    const handleSignOut = async () => {
+        try {
+            await signOut();
+            router.push('/auth/signin');
+        } catch (error) {
+            console.error('Error signing out:', error);
+        }
     };
 
     return (
@@ -211,12 +233,35 @@ export default function CreateStoryPage() {
                             Build your next adventure with AI
                         </p>
                     </div>
-                    <button
-                        onClick={handleClearAll}
-                        className="px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-sm font-medium"
-                    >
-                        Clear All
-                    </button>
+                    <div className="flex items-center gap-4">
+                        {user && (
+                            <>
+                                <button
+                                    onClick={() => router.push('/settings')}
+                                    className="px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-sm font-medium"
+                                >
+                                    ⚙️ Settings
+                                </button>
+                                <div className="flex items-center gap-3 px-4 py-2 bg-gray-100 dark:bg-gray-800 rounded-md">
+                                    <span className="text-sm text-gray-700 dark:text-gray-300">
+                                        {user.email}
+                                    </span>
+                                    <button
+                                        onClick={handleSignOut}
+                                        className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors font-medium"
+                                    >
+                                        Sign out
+                                    </button>
+                                </div>
+                            </>
+                        )}
+                        <button
+                            onClick={handleClearAll}
+                            className="px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-sm font-medium"
+                        >
+                            Clear All
+                        </button>
+                    </div>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

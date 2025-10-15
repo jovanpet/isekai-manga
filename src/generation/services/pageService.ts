@@ -3,7 +3,7 @@ import { buildPagesPrompt } from '../prompts/pagesPrompt';
 import { safeJsonParse } from '../utils/jsonParser';
 import { Story } from '@/types/story/story';
 import { Chapter, Page } from '@/types/story/arc';
-import { Character } from '@/types/character';
+import { getUserApiKey } from '../../lib/userSettings';
 
 export interface PageGenerationResponse {
     chapterTitle: string;
@@ -15,16 +15,16 @@ export async function generatePagesForChapter(
     story: Story
 ): Promise<PageGenerationResponse> {
     try {
-        // Get active characters from the story
-        const activeCharacters = story.characters.filter(char => char.status === 'active');
+        const userApiKey = await getUserApiKey();
+        if (!userApiKey) {
+            throw new Error('Please add your Gemini API key in Settings before generating pages.');
+        }
 
-        const prompt = buildPagesPrompt(chapter, activeCharacters);
-        const response = await runGemini(prompt);
+        const prompt = buildPagesPrompt(chapter, story.characters.filter(char => char.status === 'active'));
+        const response = await runGemini(prompt, userApiKey);
 
-        // Parse the response using safe JSON parser
         const pageData = safeJsonParse<PageGenerationResponse>(response, 'page generation');
 
-        // Generate unique IDs for pages and panels if they don't exist
         pageData.pages = pageData.pages.map((page, pageIndex) => {
             const pageWithId = {
                 ...page,
@@ -56,6 +56,9 @@ export async function generatePagesForChapter(
         return pageData;
     } catch (error) {
         console.error('Error generating pages for chapter:', error);
+        if (error instanceof Error && error.message.includes('API key')) {
+            throw error;
+        }
         throw new Error('Failed to generate pages for chapter');
     }
 }

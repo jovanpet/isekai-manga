@@ -13,6 +13,12 @@ export default function SignInPage() {
     const { signIn, signUp } = useAuth();
     const router = useRouter();
 
+    // Password validation
+    const hasMinLength = password.length >= 12;
+    const hasCapitalLetter = /[A-Z]/.test(password);
+    const hasNumericChar = /[0-9]/.test(password);
+    const isPasswordValid = hasMinLength && hasCapitalLetter && hasNumericChar;
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
@@ -98,13 +104,29 @@ export default function SignInPage() {
                                 onChange={(e) => setPassword(e.target.value)}
                                 required
                                 placeholder="Enter your password"
-                                minLength={6}
                                 className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-[#1e1e1e] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent"
                             />
                             {isSignUp && (
-                                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                    Password must be at least 6 characters
-                                </p>
+                                <div className="mt-3 space-y-2">
+                                    <p className="text-xs font-medium text-gray-700 dark:text-gray-300">Password requirements:</p>
+                                    <div className="space-y-1">
+                                        <div className="flex items-center gap-2">
+                                            <span className={`text-xs ${hasMinLength ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                                                {hasMinLength ? '✓' : '○'} At least 12 characters
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className={`text-xs ${hasCapitalLetter ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                                                {hasCapitalLetter ? '✓' : '○'} One capital letter
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className={`text-xs ${hasNumericChar ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                                                {hasNumericChar ? '✓' : '○'} One numeric character
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
                             )}
                         </div>
 
@@ -116,7 +138,7 @@ export default function SignInPage() {
 
                         <button
                             type="submit"
-                            disabled={isLoading || !email || !password}
+                            disabled={isLoading || !email || !password || (isSignUp && !isPasswordValid)}
                             className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {isLoading ? (isSignUp ? 'Creating account...' : 'Signing in...') : (isSignUp ? 'Create Account' : 'Sign In')}

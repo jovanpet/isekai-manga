@@ -2,6 +2,10 @@
 
 An AI-powered web application for creating and managing isekai manga stories. Generate complete story outlines, arcs, chapters, and manga pages with the help of Google's Gemini AI.
 
+Publicly Hosted: https://isekai-manga-5c872.web.app/
+
+To use sign up and add your Gemini API key to the Settings tab.
+
 ## Features
 
 ### 📖 Story Creation

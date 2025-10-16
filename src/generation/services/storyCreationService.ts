@@ -25,7 +25,6 @@ export async function createStoryFromStoryline({
     selectedStoryline
 }: CreateStoryFromStorylineParams): Promise<CreateStoryResult> {
     try {
-        // Update the story data with selected storyline
         const updatedStoryData: StoryDetails = {
             ...storyData,
             title: selectedStoryline.title,
@@ -37,10 +36,8 @@ export async function createStoryFromStoryline({
             }
         };
 
-        // Generate series outline to get arcs
         const arcOutlines = await generateSeriesOutline(updatedStoryData);
 
-        // Convert arc outlines to Arc objects with IDs and order
         const arcs: Arc[] = arcOutlines.map((arcOutline, index) => ({
             id: `arc_${index + 1}`,
             ...arcOutline,
@@ -48,13 +45,9 @@ export async function createStoryFromStoryline({
             chapters: []
         }));
 
-        // Generate objectives based on the arcs
         const objectives: Objective[] = await generateObjectives(arcs);
-
-        // Generate threads based on arcs and objectives
         const threads: Thread[] = await generateThreads({ arcs, objectives });
 
-        // Save story to Firebase with arcs, objectives, and threads included
         const storyId = await storyStore.createStory(
             updatedStoryData,
             arcs,

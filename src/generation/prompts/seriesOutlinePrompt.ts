@@ -2,7 +2,6 @@ import { Character, StoryDetails } from "@/types";
 import * as helper from "../helper";
 
 export function buildSeriesOutlinePrompt(story: StoryDetails, mainCharacter: Character) {
-
     return `
 You are an isekai manga editor outlining a full series.
 

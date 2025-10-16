@@ -7,13 +7,14 @@ import { completeStoryWithChapters } from '@/generation/services/storyCompletion
 import { Story } from '@/types/story/story';
 import { StoryDetails } from '@/types/story_details';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import { generateStoryPDF } from '@/pdf_generation/pdf_story_service';
 
 function StoryDisplayContent() {
     const [story, setStory] = useState<Story & { details: StoryDetails } | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isGeneratingChapters, setIsGeneratingChapters] = useState(false);
-    const [activeSection, setActiveSection] = useState<'story' | 'objectives' | 'threads' | 'arcs'>('story');
+    const [activeSection, setActiveSection] = useState<'story' | 'characters' | 'objectives' | 'threads' | 'arcs'>('story');
     const [arcsMenuOpen, setArcsMenuOpen] = useState(true);
     const router = useRouter();
     const params = useParams();
@@ -67,11 +68,26 @@ function StoryDisplayContent() {
         }
     };
 
+    const handleExportPDF = () => {
+        if (!story) return;
+        try {
+            generateStoryPDF(story, {
+                includeObjectives: true,
+                includeThreads: true,
+                includeCharacters: true,
+                includeChapters: true
+            });
+        } catch (error) {
+            console.error('Error generating PDF:', error);
+            setError('Failed to export PDF. Please try again.');
+        }
+    };
+
     const hasMoreArcsToGenerate = story?.arcs.some(arc => !arc.chapters || arc.chapters.length === 0) || false;
     const nextArcToGenerate = story?.arcs.findIndex(arc => !arc.chapters || arc.chapters.length === 0);
     const nextArcNumber = nextArcToGenerate !== undefined && nextArcToGenerate !== -1 ? nextArcToGenerate + 1 : null;
 
-    const scrollToSection = (section: 'story' | 'objectives' | 'threads' | 'arcs') => {
+    const scrollToSection = (section: 'story' | 'characters' | 'objectives' | 'threads' | 'arcs') => {
         setActiveSection(section);
         const element = document.getElementById(section);
         if (element) {
@@ -135,6 +151,16 @@ function StoryDisplayContent() {
                         }`}
                     >
                         📖 Story Details
+                    </button>
+                    <button
+                        onClick={() => scrollToSection('characters')}
+                        className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                            activeSection === 'characters'
+                                ? 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
+                                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                        }`}
+                    >
+                        👥 Characters
                     </button>
                     <button
                         onClick={() => scrollToSection('objectives')}
@@ -220,6 +246,14 @@ function StoryDisplayContent() {
                             ✓ All Arcs Complete
                         </div>
                     )}
+
+                    <button
+                        onClick={handleExportPDF}
+                        className="w-full px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white text-sm font-medium rounded-md transition-colors flex items-center justify-center gap-2"
+                    >
+                        <span>📄</span>
+                        <span>Export as PDF</span>
+                    </button>
                 </div>
             </aside>
 
@@ -316,6 +350,99 @@ function StoryDisplayContent() {
                                     </div>
                                 </div>
                             </div>
+                        </div>
+                    </section>
+
+                    {/* Characters Section */}
+                    <section id="characters" className="scroll-mt-8">
+                        <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-6">👥 Characters</h2>
+                        <div className="space-y-4">
+                            {story.characters && story.characters.length > 0 ? (
+                                story.characters.map((character, index) => (
+                                    <div key={character.id || index} className="bg-white dark:bg-[#252525] border border-gray-200 dark:border-gray-800 rounded-lg p-6">
+                                        <div className="flex items-start justify-between mb-4">
+                                            <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{character.name}</h3>
+                                            <div className="flex gap-2">
+                                                <span className={`px-2 py-1 rounded text-xs font-medium ${
+                                                    character.role === 'protagonist'
+                                                        ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                                                        : character.role === 'companion'
+                                                        ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
+                                                        : character.role === 'mentor'
+                                                        ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
+                                                        : character.role === 'rival'
+                                                        ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'
+                                                        : character.role === 'villain'
+                                                        ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
+                                                        : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+                                                }`}>
+                                                    {character.role}
+                                                </span>
+                                                <span className={`px-2 py-1 rounded text-xs font-medium ${
+                                                    character.status === 'active'
+                                                        ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
+                                                        : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+                                                }`}>
+                                                    {character.status}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+                                            <div>
+                                                <p className="text-sm text-gray-500 dark:text-gray-400">Gender</p>
+                                                <p className="text-gray-900 dark:text-gray-100">{character.gender}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-sm text-gray-500 dark:text-gray-400">Species</p>
+                                                <p className="text-gray-900 dark:text-gray-100">{character.species}</p>
+                                            </div>
+                                            {character.characterOccupation && (
+                                                <div>
+                                                    <p className="text-sm text-gray-500 dark:text-gray-400">Occupation</p>
+                                                    <p className="text-gray-900 dark:text-gray-100">{character.characterOccupation}</p>
+                                                </div>
+                                            )}
+                                            {character.age && (
+                                                <div>
+                                                    <p className="text-sm text-gray-500 dark:text-gray-400">Age</p>
+                                                    <p className="text-gray-900 dark:text-gray-100">{character.age}</p>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {character.appearance?.description && (
+                                            <div className="mb-4">
+                                                <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Appearance</p>
+                                                <p className="text-gray-900 dark:text-gray-100">{character.appearance.description}</p>
+                                            </div>
+                                        )}
+
+                                        {character.personalityTraits && character.personalityTraits.length > 0 && (
+                                            <div>
+                                                <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">Personality Traits</p>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {character.personalityTraits.map((trait, traitIndex) => (
+                                                        <span key={traitIndex} className="px-2 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded text-sm">
+                                                            {trait}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {character.overpowered && (
+                                            <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 rounded text-sm font-medium">
+                                                ⚡ Overpowered
+                                            </div>
+                                        )}
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="bg-gray-50 dark:bg-[#1e1e1e] border border-gray-200 dark:border-gray-800 rounded-lg p-8 text-center">
+                                    <p className="text-gray-500 dark:text-gray-400">No additional characters yet. Characters will be added as the story progresses.</p>
+                                </div>
+                            )}
                         </div>
                     </section>
 

@@ -2,17 +2,14 @@ import { Character } from "@/types";
 import { Chapter } from "@/types/story/arc";
 
 export function buildPagesPrompt(chapter: Chapter, activeCharacters: Character[]) {
-    const chapterJSON = JSON.stringify(chapter, null, 2);
-    const charsJSON = JSON.stringify(activeCharacters, null, 2);
-
     return `
 You are a manga storyboard artist designing page layouts.
 
 CHAPTER:
-${chapterJSON}
+${JSON.stringify(chapter, null, 2)}
 
 ACTIVE CHARACTERS:
-${charsJSON}
+${JSON.stringify(activeCharacters, null, 2)}
 
 ---
 

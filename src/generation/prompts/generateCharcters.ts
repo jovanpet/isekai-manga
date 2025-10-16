@@ -1,8 +1,6 @@
 import { Character } from "@/types";
 
 export function buildCharacterTypePrompt(character: Character) {
-    const charsJSON = JSON.stringify(character, null, 2);
-
     return `
 You are a professional character designer for fantasy manga and light novels.
 
@@ -10,7 +8,7 @@ Below is a list of characters with basic attributes.
 For each one, create a rich "Character Type" profile.
 
 INPUT CHARACTERS:
-${charsJSON}
+${JSON.stringify(character, null, 2)}
 
 ---
 

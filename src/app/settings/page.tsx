@@ -148,7 +148,7 @@ function SettingsContent() {
                         <ol className="list-decimal list-inside space-y-2 text-sm text-gray-600 dark:text-gray-400">
                             <li>Visit <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline">Google AI Studio</a></li>
                             <li>Sign in with your Google account</li>
-                            <li>Click "Get API Key" or "Create API Key"</li>
+                            <li>Click &quot;Get API Key&quot; or &quot;Create API Key&quot;</li>
                             <li>Copy the key and paste it above</li>
                         </ol>
                     </div>

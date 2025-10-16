@@ -270,7 +270,7 @@ function ChapterViewContent() {
                                                 {page.panel.dialogue && (
                                                     <div>
                                                         <p className="text-gray-500 dark:text-gray-400 font-semibold mb-1">Dialogue</p>
-                                                        <p className="text-gray-900 dark:text-gray-100 italic">"{page.panel.dialogue}"</p>
+                                                        <p className="text-gray-900 dark:text-gray-100 italic">&quot;{page.panel.dialogue}&quot;</p>
                                                     </div>
                                                 )}
                                                 {page.panel.focusCharacters && page.panel.focusCharacters.length > 0 && (
@@ -322,7 +322,7 @@ function ChapterViewContent() {
                                                         {panel.dialogue && (
                                                             <div>
                                                                 <p className="text-gray-500 dark:text-gray-400 font-semibold mb-1">Dialogue</p>
-                                                                <p className="text-gray-900 dark:text-gray-100 italic">"{panel.dialogue}"</p>
+                                                                <p className="text-gray-900 dark:text-gray-100 italic">&quot;{panel.dialogue}&quot;</p>
                                                             </div>
                                                         )}
                                                         {panel.focusCharacters && panel.focusCharacters.length > 0 && (

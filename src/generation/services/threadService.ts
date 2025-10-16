@@ -17,7 +17,7 @@ export async function generateThreads(partialStory: PartialStoryForThreads): Pro
         if (!userApiKey) {
             throw new Error('Please add your Gemini API key in Settings before generating series outline.');
         }
-        // Create a partial story object for the prompt
+
         const storyForPrompt = {
             arcs: partialStory.arcs,
             objectives: partialStory.objectives
@@ -26,10 +26,7 @@ export async function generateThreads(partialStory: PartialStoryForThreads): Pro
         const prompt = buildThreadSeedsPrompt(storyForPrompt);
         const response = await runGemini(prompt, userApiKey);
 
-        // Clean up the response to extract JSON
         const cleanedResponse = response.replace(/```json\n?|```\n?/g, '').trim();
-
-        // Parse the response as an array of threads
         const threads = JSON.parse(cleanedResponse) as Thread[];
 
         return threads;

@@ -14,10 +14,7 @@ export async function generateObjectives(arcs: Arc[]): Promise<Objective[]> {
         const prompt = buildObjectivesPrompt(arcs);
         const response = await runGemini(prompt, userApiKey);
 
-        // Clean up the response to extract JSON
         const cleanedResponse = response.replace(/```json\n?|```\n?/g, '').trim();
-
-        // Parse the response as an array of objectives
         const objectives = JSON.parse(cleanedResponse) as Objective[];
 
         return objectives;

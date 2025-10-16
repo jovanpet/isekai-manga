@@ -1,10 +1,9 @@
 import { Arc } from "@/types";
 
 export function buildObjectivesPrompt(arcs: Arc[]) {
-    const arcCount = arcs.length;
     const arcsJSON = JSON.stringify(arcs, null, 2);
-    const numberOfMajorObjectives = Math.floor(arcCount * 0.3);
-    const numberOfMinorObjectives = Math.floor(arcCount * 0.7);
+    const numberOfMajorObjectives = Math.floor(arcs.length * 0.3);
+    const numberOfMinorObjectives = Math.floor(arcs.length * 0.7);
 
     return `
 You are a professional story planner designing narrative milestones

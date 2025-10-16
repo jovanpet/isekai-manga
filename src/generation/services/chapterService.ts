@@ -1,7 +1,6 @@
 import { runGemini } from '../geminiClient';
 import { buildChaptersPrompt } from '../prompts/chapterGenerationPrompt';
 import { buildCharacterTypePrompt } from '../prompts/generateCharcters';
-import { generatePagesForChapter } from './pageService';
 import { safeJsonParse } from '../utils/jsonParser';
 import { Story } from '@/types/story/story';
 import { Chapter } from '@/types/story/arc';
@@ -172,19 +171,3 @@ function mapRole(role: string): CharacterRole {
     }
 }
 
-export async function addPagesToChapter(chapter: Chapter, story: Story): Promise<Chapter> {
-    try {
-        const pageResponse = await generatePagesForChapter(chapter, story);
-        return {
-            ...chapter,
-            pages: pageResponse.pages
-        };
-    } catch (error) {
-        console.error(`Error generating pages for chapter ${chapter.chapterTitle}:`, error);
-        // Return chapter without pages if page generation fails
-        return {
-            ...chapter,
-            pages: []
-        };
-    }
-}

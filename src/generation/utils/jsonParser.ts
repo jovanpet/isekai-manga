@@ -6,8 +6,6 @@ export function safeJsonParse<T>(response: string, context: string = 'AI respons
             .replace(/[\x00-\x1F\x7F-\x9F]/g, '')
             .trim();
 
-        console.log(`Cleaned ${context}:`, cleanedResponse.substring(0, 200) + '...');
-
         cleanedResponse = cleanedResponse.replace(/,(\s*[}\]])/g, '$1');
 
         return JSON.parse(cleanedResponse) as T;

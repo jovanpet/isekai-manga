@@ -53,8 +53,18 @@ export default function CreateStoryPage() {
             try {
                 const stories = await storyStore.getStoriesWithDetailsByUser(user.uid);
                 setExistingStories(stories);
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Error loading stories:', error);
+                // If index doesn't exist yet, fall back to getting all stories and filter client-side
+                if (error?.message?.includes('index') || error?.code === 'failed-precondition') {
+                    try {
+                        const allStories = await storyStore.getAllStoriesWithDetails();
+                        const userStories = allStories.filter(story => story.userId === user.uid);
+                        setExistingStories(userStories);
+                    } catch (fallbackError) {
+                        console.error('Error loading stories (fallback):', fallbackError);
+                    }
+                }
             } finally {
                 setIsLoadingStories(false);
             }
@@ -531,33 +541,33 @@ export default function CreateStoryPage() {
                             Your Stories
                         </h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {existingStories.map((story) => (
+                            {existingStories.map((existingStory) => (
                                 <div
-                                    key={story.id}
-                                    onClick={() => router.push(`/story/${story.id}`)}
+                                    key={existingStory.id}
+                                    onClick={() => router.push(`/story/${existingStory.id}`)}
                                     className="bg-white dark:bg-[#252525] border border-gray-200 dark:border-gray-800 rounded-lg p-6 hover:border-gray-300 dark:hover:border-gray-700 cursor-pointer transition-all group"
                                 >
                                     <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                                        {story.details.title}
+                                        {existingStory.details.title}
                                     </h3>
                                     <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-3">
-                                        {story.details.summary}
+                                        {existingStory.details.summary}
                                     </p>
                                     <div className="flex items-center justify-between">
                                         <div className="flex flex-wrap gap-2">
-                                            {story.details.genreTags.slice(0, 2).map((tag, index) => (
+                                            {existingStory.details.genreTags.slice(0, 2).map((tag, index) => (
                                                 <span key={index} className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded text-xs">
                                                     {tag}
                                                 </span>
                                             ))}
-                                            {story.details.genreTags.length > 2 && (
+                                            {existingStory.details.genreTags.length > 2 && (
                                                 <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded text-xs">
-                                                    +{story.details.genreTags.length - 2}
+                                                    +{existingStory.details.genreTags.length - 2}
                                                 </span>
                                             )}
                                         </div>
                                         <span className="text-xs text-gray-500 dark:text-gray-400">
-                                            {story.arcs.length} arcs
+                                            {existingStory.arcs.length} arcs
                                         </span>
                                     </div>
                                     <div className="mt-4 flex items-center gap-2">
@@ -565,12 +575,12 @@ export default function CreateStoryPage() {
                                             <div
                                                 className="h-full bg-blue-600 dark:bg-blue-500 transition-all"
                                                 style={{
-                                                    width: `${(story.arcs.filter(arc => arc.chapters && arc.chapters.length > 0).length / story.arcs.length) * 100}%`
+                                                    width: `${(existingStory.arcs.filter(arc => arc.chapters && arc.chapters.length > 0).length / existingStory.arcs.length) * 100}%`
                                                 }}
                                             />
                                         </div>
                                         <span className="text-xs text-gray-500 dark:text-gray-400">
-                                            {story.arcs.filter(arc => arc.chapters && arc.chapters.length > 0).length}/{story.arcs.length}
+                                            {existingStory.arcs.filter(arc => arc.chapters && arc.chapters.length > 0).length}/{existingStory.arcs.length}
                                         </span>
                                     </div>
                                 </div>

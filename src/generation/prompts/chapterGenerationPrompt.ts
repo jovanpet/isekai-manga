@@ -3,12 +3,10 @@ import { Story } from "@/types/story/story";
 export function buildChaptersPrompt(story: Story, arcIndex: number) {
     const currentArcTitle = story.arcs[arcIndex].title;
 
-    // Threads that need to be introduced in this arc
     const threadsToIntroduce = story.threads.filter(
         t => t.arcIntroduced === currentArcTitle && t.status === 'seed'
     );
 
-    // Threads that need to be resolved in this arc
     const threadsToResolve = story.threads.filter(
         t => t.arcsResolved === currentArcTitle && t.status !== 'resolved'
     );
